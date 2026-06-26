@@ -53,21 +53,28 @@ Sirvir is the **infrastructure owner** for your model fleet. He doesn't just ser
 Sirvir requires the [turbofit](https://github.com/SouthpawIN/turbofit) skill to be installed first — it's the core serving engine.
 
 ```bash
-# One-liner: installs turbofit first, then Sirvir
-hermes skills tap add SouthpawIN/turbofit && hermes skills install turbofit && \
-hermes skills tap add SouthpawIN/sirvir && hermes skills install SouthpawIN/sirvir/skills/sirvir
+# Installs the full Sirvir profile — includes turbofit + all sub-skills
+hermes profile install https://github.com/SouthpawIN/sirvir
 ```
 
-After install, `source ~/.bashrc` to get the `serve` and `name` shell commands.
+This creates the `sirvir` profile at `~/.hermes/profiles/sirvir/` with:
+- SOUL.md, AGENTS.md, config.yaml, distribution.yaml
+- profile.png, banner.png (Nous-style artwork)
+- skills/turbofit/ (core serving engine)
+- skills/sirvir-bench/ (benchmarking)
+- skills/sirvir-research/ (HuggingFace scanning)
+- skills/sirvir-scale/ (VRAM scaling)
+- skills/sirvir-serve/ (external app endpoints)
+- skills/sirvir-budget/ (token budget tracking)
 
-Then start Sirvir:
+After install, start Sirvir:
 ```bash
 hermes -p sirvir
 ```
 
-The repo also includes `SOUL.md`, `AGENTS.md`, `distribution.yaml`, `profile.png`, and `banner.png` at the root for reference — clone the repo to access the full profile files:
+Update later with:
 ```bash
-git clone https://github.com/SouthpawIN/sirvir.git ~/projects/sirvir
+hermes profile update sirvir
 ```
 
 ### Optional Environment Variables
