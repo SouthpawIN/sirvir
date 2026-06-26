@@ -1,0 +1,64 @@
+# distribution.yaml — Sirvir profile distribution manifest
+# Install with: hermes skills tap add SouthpawIN/sirvir && hermes skills install sirvir
+name: sirvir
+version: "1.0.0"
+description: >-
+  Model fleet manager & intelligence engine for Hermes Agent. Autonomous model
+  lifecycle manager: local serving (llama.cpp/vLLM/Ollama/SGlang), benchmarking
+  (MMLU, GPQA, SWE-bench, HumanEval, AIME), auto-scaling via VRAM scaling ladder,
+  API fallback (free NVIDIA NIM), HuggingFace model scanning, creator quality
+  tracking, backend optimization, token budget monitoring, external app endpoint
+  serving, and consolidated logging to Discord + blog + GitHub. Optimization
+  priority: 262K context → 30 tok/s → 1M context → max speed. Runs as a dedicated
+  Hermes profile alongside the multi-agent fleet.
+author: SouthpawIN
+license: MIT
+homepage: https://github.com/SouthpawIN/sirvir
+repo: https://github.com/SouthpawIN/sirvir
+
+# Hermes-Agent version requirement
+hermes_requires: ">=0.12.0"
+
+# Environment variables the user may set
+env_requires:
+  - name: NVIDIA_API_KEY
+    description: >-
+      NVIDIA NIM API key for free-tier API fallback models
+      (DeepSeek V4 Pro/Flash, MiniMax M3, Nemotron Ultra).
+      Sign up free at https://build.nvidia.com — ~1000 RPM, no credit card.
+    required: false
+  - name: OPENROUTER_API_KEY
+    description: >-
+      OpenRouter API key for paid API models (GLM 5.2, Qwen 3.7 MAX, etc.).
+      Only needed if using API models not on NVIDIA NIM.
+    required: false
+  - name: HF_TOKEN
+    description: >-
+      HuggingFace token for model scanning and downloading GGUF files.
+      Create at https://huggingface.co/settings/tokens
+    required: false
+
+# Dependencies — turbofit is the core serving skill
+dependencies:
+  - name: turbofit
+    repo: SouthpawIN/turbofit
+    install: "hermes skills tap add SouthpawIN/turbofit && hermes skills install turbofit"
+    required: true
+
+# Files owned by this distribution
+distribution_owned:
+  - SOUL.md
+  - AGENTS.md
+  - config.yaml
+  - distribution.yaml
+  - profile.png
+  - skills/sirvir-bench/
+  - skills/sirvir-research/
+  - skills/sirvir-scale/
+  - skills/sirvir-serve/
+  - skills/sirvir-budget/
+
+# Post-install hook
+post_install:
+  - command: echo "Sirvir profile installed. Start with: hermes -p sirvir"
+    description: Display usage instructions

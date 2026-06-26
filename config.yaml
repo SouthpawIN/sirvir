@@ -1,0 +1,443 @@
+_config_version: 23
+agent:
+  api_max_retries: 3
+  disabled_toolsets: []
+  gateway_auto_continue_freshness: 3600
+  gateway_notify_interval: 180
+  gateway_timeout: 1800
+  gateway_timeout_warning: 900
+  image_input_mode: auto
+  max_turns: 200
+  restart_drain_timeout: 180
+  service_tier: ''
+  tool_use_enforcement: auto
+  task_completion_guidance: true
+  parallel_tool_call_guidance: true
+  environment_probe: true
+  environment_hint: ''
+  coding_context: auto
+  clarify_timeout: 600
+approvals:
+  cron_mode: deny
+  mcp_reload_confirm: true
+  destructive_slash_confirm: true
+  mode: manual
+  timeout: 60
+auxiliary:
+  approval:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    extra_body: {}
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 30
+  compression:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    extra_body: {}
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 120
+  curator:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    extra_body: {}
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 600
+  mcp:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    extra_body: {}
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 30
+  session_search:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    extra_body: {}
+    max_concurrency: 3
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 30
+  skills_hub:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    extra_body: {}
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 30
+  title_generation:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    extra_body: {}
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 30
+  vision:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    download_timeout: 30
+    extra_body: {}
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 120
+  web_extract:
+    api_key: not-needed
+    base_url: http://127.0.0.1:8082/v1
+    extra_body: {}
+    model: qwen3.6-35b-a3b
+    provider: custom
+    timeout: 360
+bedrock:
+  discovery:
+    enabled: true
+    provider_filter: []
+    refresh_interval: 3600
+  guardrail:
+    guardrail_identifier: ''
+    guardrail_version: ''
+    stream_processing_mode: async
+    trace: disabled
+  region: ''
+browser:
+  allow_private_urls: false
+  auto_local_for_private_urls: true
+  camofox:
+    managed_persistence: false
+  cdp_url: ''
+  cloud_provider: browser-use
+  command_timeout: 30
+  dialog_policy: must_respond
+  dialog_timeout_s: 300
+  inactivity_timeout: 120
+  record_sessions: false
+checkpoints:
+  auto_prune: false
+  delete_orphans: true
+  enabled: true
+  max_snapshots: 50
+  min_interval_hours: 24
+  retention_days: 7
+code_execution:
+  mode: project
+command_allowlist:
+- recursive delete
+- shell command via -c/-lc flag
+- script execution via -e/-c flag
+- delete in root path
+- overwrite project env/config file
+- execute_code
+- stop/restart system service
+- kill process via pgrep expansion (self-termination)
+compression:
+  enabled: true
+  hygiene_hard_message_limit: 400
+  protect_last_n: 20
+  target_ratio: 0.2
+  threshold: 0.95
+  protect_first_n: 3
+  abort_on_summary_failure: false
+context:
+  engine: compressor
+context_file_max_chars: null
+credential_pool_strategies: {}
+cron:
+  max_parallel_jobs: null
+  wrap_response: true
+curator:
+  archive_after_days: 90
+  backup:
+    enabled: true
+    keep: 5
+  enabled: true
+  interval_hours: 168
+  min_idle_hours: 2
+  stale_after_days: 30
+  consolidate: false
+  prune_builtins: true
+dashboard:
+  theme: default
+delegation:
+  api_key: ''
+  base_url: ''
+  child_timeout_seconds: 600
+  inherit_mcp_toolsets: true
+  max_concurrent_children: 3
+  max_iterations: 50
+  max_spawn_depth: 1
+  model: ''
+  orchestrator_enabled: true
+  provider: ''
+  reasoning_effort: ''
+  subagent_auto_approve: false
+  max_async_children: 3
+discord:
+  allowed_channels: ''
+  auto_thread: true
+  channel_prompts: {}
+  free_response_channels: ''
+  reactions: true
+  require_mention: true
+  server_actions: ''
+display:
+  bell_on_complete: false
+  busy_input_mode: interrupt
+  compact: false
+  ephemeral_system_ttl: 0
+  final_response_markdown: strip
+  inline_diffs: true
+  interim_assistant_messages: true
+  personality: kawaii
+  platforms: {}
+  resume_display: full
+  runtime_footer:
+    enabled: false
+    fields:
+    - model
+    - context_pct
+    - cwd
+  show_cost: false
+  show_reasoning: false
+  skin: poseidon
+  streaming: false
+  tui_auto_resume_recent: false
+  tui_status_indicator: kaomoji
+  user_message_preview:
+    first_lines: 2
+    last_lines: 2
+fallback_providers: []
+file_read_max_chars: 100000
+goals:
+  max_turns: 20
+honcho: {}
+hooks: {}
+hooks_auto_accept: false
+human_delay:
+  max_ms: 2500
+  min_ms: 800
+  mode: 'off'
+kanban:
+  dispatch_in_gateway: true
+  dispatch_interval_seconds: 60
+  failure_limit: 2
+  worker_log_rotate_bytes: 2097152
+  worker_log_backup_count: 1
+  orchestrator_profile: ''
+  default_assignee: ''
+  max_in_progress_per_profile: null
+  auto_decompose: true
+  auto_decompose_per_tick: 3
+  dispatch_stale_timeout_seconds: 14400
+known_plugin_toolsets:
+  cli:
+  - spotify
+logging:
+  backup_count: 3
+  level: INFO
+  max_size_mb: 5
+mattermost:
+  channel_prompts: {}
+memory:
+  memory_char_limit: 2200
+  memory_enabled: true
+  provider: ''
+  user_char_limit: 1375
+  user_profile_enabled: true
+  write_approval: false
+model:
+  base_url: http://127.0.0.1:11500/v1
+  default: darwin-28b-reason
+  provider: custom
+model_catalog:
+  enabled: true
+  providers: {}
+  ttl_hours: 24
+  url: https://hermes-agent.nousresearch.com/docs/api/model-catalog.json
+network:
+  force_ipv4: false
+onboarding:
+  seen: {}
+  profile_build: ask
+openrouter:
+  response_cache: true
+  response_cache_ttl: 300
+personalities: {}
+platform_toolsets:
+  cli:
+  - clarify
+  - cronjob
+  - delegation
+  - file
+  - memory
+  - session_search
+  - skills
+  - terminal
+  - todo
+  - vision
+  - web
+prefill_messages_file: ''
+privacy:
+  redact_pii: false
+prompt_caching:
+  cache_ttl: 5m
+providers: {}
+quick_commands: {}
+security:
+  allow_private_urls: false
+  redact_secrets: false
+  tirith_enabled: true
+  tirith_fail_open: true
+  tirith_path: tirith
+  tirith_timeout: 5
+  website_blocklist:
+    domains: []
+    enabled: false
+    shared_files: []
+  acked_advisories: []
+  allow_lazy_installs: true
+session_reset:
+  at_hour: 4
+  idle_minutes: 1440
+  mode: both
+sessions:
+  auto_prune: false
+  min_interval_hours: 24
+  retention_days: 90
+  vacuum_after_prune: true
+  write_json_snapshots: false
+skills:
+  external_dirs: []
+  template_vars: true
+  inline_shell: false
+  inline_shell_timeout: 10
+  guard_agent_created: false
+  write_approval: false
+slack:
+  channel_prompts: {}
+stt:
+  enabled: true
+  local:
+    language: ''
+    model: base
+  openai:
+    model: whisper-1
+  mistral:
+    model: voxtral-mini-latest
+  provider: local
+telegram:
+  channel_prompts: {}
+  reactions: false
+terminal:
+  auto_source_bashrc: true
+  backend: local
+  container_cpu: 1
+  container_disk: 51200
+  container_memory: 5120
+  container_persistent: true
+  cwd: /home/sovthpaw
+  daytona_image: nikolaik/python-nodejs:python3.11-nodejs20
+  docker_env: {}
+  docker_forward_env: []
+  docker_image: nikolaik/python-nodejs:python3.11-nodejs20
+  docker_mount_cwd_to_workspace: false
+  docker_run_as_host_user: false
+  docker_volumes: []
+  docker_extra_args: []
+  env_passthrough: []
+  home_mode: auto
+  modal_image: nikolaik/python-nodejs:python3.11-nodejs20
+  modal_mode: auto
+  persistent_shell: true
+  shell_init_files: []
+  singularity_image: docker://nikolaik/python-nodejs:python3.11-nodejs20
+  timeout: 180
+  daemon_term_grace_seconds: 2.0
+  vercel_runtime: node24
+timezone: ''
+tool_loop_guardrails:
+  hard_stop_after:
+    exact_failure: 5
+    idempotent_no_progress: 5
+    same_tool_failure: 8
+  hard_stop_enabled: false
+  warn_after:
+    exact_failure: 2
+    idempotent_no_progress: 2
+    same_tool_failure: 3
+  warnings_enabled: true
+tool_output:
+  max_bytes: 50000
+  max_line_length: 2000
+  max_lines: 2000
+toolsets:
+- hermes-cli
+tts:
+  edge:
+    voice: en-US-AriaNeural
+  elevenlabs:
+    model_id: eleven_multilingual_v2
+    voice_id: pNInz6obpgDQGcFmaJgB
+  mistral:
+    model: voxtral-mini-tts-2603
+    voice_id: c69964a6-ab8b-4f8a-9465-ec0925096ec8
+  neutts:
+    device: cpu
+    model: neuphonic/neutts-air-q4-gguf
+    ref_audio: ''
+    ref_text: ''
+  openai:
+    model: gpt-4o-mini-tts
+    voice: alloy
+  piper:
+    voice: en_US-lessac-medium
+  provider: openai
+  xai:
+    bit_rate: 128000
+    language: en
+    sample_rate: 24000
+    voice_id: eve
+updates:
+  backup_keep: 5
+  pre_update_backup: false
+  non_interactive_local_changes: stash
+voice:
+  auto_tts: false
+  beep_enabled: true
+  max_recording_seconds: 120
+  record_key: ctrl+b
+  silence_duration: 3.0
+  silence_threshold: 200
+web:
+  backend: firecrawl
+  search_backend: ''
+  extract_backend: ''
+whatsapp: {}
+lsp:
+  enabled: true
+  wait_mode: document
+  wait_timeout: 5.0
+  install_strategy: auto
+  servers: {}
+x_search:
+  model: grok-4.20-reasoning
+  timeout_seconds: 180
+  retries: 2
+secrets:
+  bitwarden:
+    enabled: false
+    access_token_env: BWS_ACCESS_TOKEN
+    project_id: ''
+    cache_ttl_seconds: 300
+    override_existing: true
+    auto_install: true
+    server_url: ''
+computer_use:
+  cua_telemetry: false
+custom_providers:
+- name: llama-main
+  base_url: http://127.0.0.1:11500/v1
+  api_key: not-needed
+- name: llama-aux
+  base_url: http://127.0.0.1:8082/v1
+  api_key: not-needed

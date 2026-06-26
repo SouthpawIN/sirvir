@@ -1,0 +1,112 @@
+# Backend Performance Database
+# Tracks which backend (llama.cpp, vLLM, Ollama, SGlang) performs best for each model
+# Maintained by Sirvir — updated via constant backend testing cron
+# Last updated: 2026-06-26
+
+# Schema per entry:
+#   model: <alias>
+#   backends:
+#     <backend_name>:
+#       tok_s: <measured throughput>
+#       vram_gb: <VRAM usage>
+#       ctx_max: <max context achieved>
+#       launch_time_s: <time to first token>
+#       stability: stable | unstable | untested
+#       notes: <any issues or observations>
+#   recommended: <best backend for this model>
+#   recommended_reason: <why>
+
+models:
+
+  darwin-28b-reason:
+    backends:
+      llama-cpp:
+        tok_s: 38
+        vram_gb: 17
+        ctx_max: 262144
+        launch_time_s: 12
+        stability: stable
+        notes: "Atomic fork with turbo4-kv + NextN. Best backend for this model."
+    recommended: llama-cpp
+    recommended_reason: "Only backend supporting TurboQuant KV cache + NextN speculative decoding. vLLM/Ollama lack turbo cache types."
+
+  prism-eagle-27b:
+    backends:
+      llama-cpp:
+        tok_s: 121
+        vram_gb: 14
+        ctx_max: 262144
+        launch_time_s: 8
+        stability: stable
+        notes: "draft-mtp preset. Hybrid Mamba2+GDN architecture — only llama.cpp supports this."
+    recommended: llama-cpp
+    recommended_reason: "Mamba2+GDN architecture requires llama.cpp. Other backends don't support hybrid SSM/attention."
+
+  carnice:
+    backends:
+      llama-cpp:
+        tok_s: 110
+        vram_gb: 11
+        ctx_max: 262144
+        launch_time_s: 6
+        stability: stable
+        notes: "Q2 compact, MoE 3B active. Stock llama-server (atomic fork crashes on 35A3B mmproj). turbo2-kv cache."
+    recommended: llama-cpp
+    recommended_reason: "Atomic fork clip_loader crashes on 35A3B mmproj (n_embd=2048). Stock llama-server works fine with q8-kv cache."
+
+  darwin-apex-36b:
+    backends:
+      llama-cpp:
+        tok_s: 107
+        vram_gb: 16
+        ctx_max: 262144
+        launch_time_s: 10
+        stability: stable
+        notes: "Atomic fork with nextn + turbo4-kv. MoE 36B/3B-active."
+    recommended: llama-cpp
+    recommended_reason: "NextN speculative decoding requires atomic fork. Other backends don't support NextN."
+
+# Models below need backend testing (fill in after benchmarks run):
+  carwin-28b-mtp:
+    backends:
+      llama-cpp:
+        tok_s: 100
+        vram_gb: 17
+        ctx_max: 262144
+        launch_time_s: 10
+        stability: stable
+        notes: "draft-mtp preset. Untested on vLLM/Ollama."
+    recommended: llama-cpp
+    recommended_reason: "MTP requires llama.cpp. Pending vLLM test."
+
+  qwopus-27b-v2-mtp:
+    backends:
+      llama-cpp:
+        tok_s: 100
+        vram_gb: 17
+        ctx_max: 262144
+        launch_time_s: 10
+        stability: stable
+        notes: "Native MTP graft. Untested on other backends."
+    recommended: llama-cpp
+    recommended_reason: "MTP graft requires llama.cpp. Pending vLLM test."
+
+  qwopus-27b-coder-mtp:
+    backends:
+      llama-cpp:
+        tok_s: 100
+        vram_gb: 17
+        ctx_max: 262144
+        launch_time_s: 10
+        stability: stable
+        notes: "Coding-optimized MTP. Untested on other backends."
+    recommended: llama-cpp
+    recommended_reason: "MTP requires llama.cpp. Pending vLLM test."
+
+# Backend comparison notes:
+# - llama.cpp: Best for TurboQuant, NextN, MTP, hybrid architectures. Atomic fork adds turbo KV cache.
+# - vLLM: Best throughput for dense models at scale. Lacks turbo/NextN support. Test for non-MTP models.
+# - Ollama: Easiest setup, good for quick testing. Generally slower than llama.cpp for same model.
+# - SGlang: Best for serving multiple models concurrently. Test for MoE models.
+# 
+# Testing priority: llama.cpp (already done) → vLLM (test non-MTP 27B dense) → SGlang (test MoE) → Ollama (baseline)
