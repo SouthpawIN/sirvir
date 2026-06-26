@@ -53,19 +53,22 @@ Sirvir is the **infrastructure owner** for your model fleet. He doesn't just ser
 Sirvir requires the [turbofit](https://github.com/SouthpawIN/turbofit) skill to be installed first — it's the core serving engine.
 
 ```bash
-# 1. Install turbofit (required dependency)
-hermes skills tap add SouthpawIN/turbofit
-hermes skills install turbofit
-
-# 2. Add the Sirvir repo and install
-hermes skills tap add SouthpawIN/sirvir
-hermes skills install SouthpawIN/sirvir/skills/sirvir
-
-# 3. Start using it
-hermes -p sirvir
+# One-liner: installs turbofit first, then Sirvir
+hermes skills tap add SouthpawIN/turbofit && hermes skills install turbofit && \
+hermes skills tap add SouthpawIN/sirvir && hermes skills install SouthpawIN/sirvir/skills/sirvir
 ```
 
 After install, `source ~/.bashrc` to get the `serve` and `name` shell commands.
+
+Then start Sirvir:
+```bash
+hermes -p sirvir
+```
+
+The repo also includes `SOUL.md`, `AGENTS.md`, `distribution.yaml`, `profile.png`, and `banner.png` at the root for reference — clone the repo to access the full profile files:
+```bash
+git clone https://github.com/SouthpawIN/sirvir.git ~/projects/sirvir
+```
 
 ### Optional Environment Variables
 
