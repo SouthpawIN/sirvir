@@ -44,6 +44,15 @@ hermes -p sirvir
 # > how much have I spent this month?
 ```
 
+### Environment Variables
+
+| Variable | Where | What It Enables |
+|----------|-------|----------------|
+| `NVIDIA_API_KEY` | Free at build.nvidia.com | Free API fallback (DeepSeek V4 Pro/Flash, MiniMax M3) |
+| Nous Portal | nousresearch.com | **Primary** — Tool Gateway (Firecrawl, FAL, OpenAI TTS, Browser Use) + 10% OR credit bonus |
+| `OPENROUTER_API_KEY` | openrouter.ai | Paid API models. Secondary to Nous |
+| `HF_TOKEN` | huggingface.co/settings/tokens | HF model scanning + downloading |
+
 ## Sub-Skills
 
 Sirvir ships with 5 focused sub-skills alongside the turbofit core:

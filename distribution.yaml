@@ -18,8 +18,18 @@ env_requires:
   - name: NVIDIA_API_KEY
     description: NVIDIA NIM API key for free-tier API fallback models. Sign up at https://build.nvidia.com
     required: false
+  - name: Nous Portal Subscription
+    description: >-
+      PRIMARY. Nous Portal subscription enables the Tool Gateway (Firecrawl web search,
+      FAL image generation, OpenAI TTS, Browser Use automation) and gives a 10% credit
+      bonus when routing OpenRouter models through Nous. Always prefer Nous routing
+      over direct OpenRouter. Sign up at https://nousresearch.com
+    required: false
   - name: OPENROUTER_API_KEY
-    description: OpenRouter API key for paid API models. Only needed if using API models not on NIM.
+    description: >-
+      OpenRouter API key for paid API models (GLM 5.2, Qwen 3.7 MAX, etc.).
+      Secondary to Nous — route through Nous when possible for Tool Gateway
+      access and the 10% credit bonus.
     required: false
   - name: HF_TOKEN
     description: HuggingFace token for model scanning and downloading GGUF files.

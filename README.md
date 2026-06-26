@@ -72,7 +72,8 @@ After install, `source ~/.bashrc` to get the `serve` and `name` shell commands.
 | Variable | Where to Get It | What It Enables |
 |----------|----------------|----------------|
 | `NVIDIA_API_KEY` | Free at [build.nvidia.com](https://build.nvidia.com) | Free API fallback (DeepSeek V4 Pro/Flash, MiniMax M3) |
-| `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) | Paid API models (GLM 5.2, Qwen 3.7 MAX) |
+| Nous Portal Subscription | [nousresearch.com](https://nousresearch.com) | **Primary** — Tool Gateway (Firecrawl, FAL, OpenAI TTS, Browser Use) + 10% OpenRouter credit bonus when routing through Nous |
+| `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) | Paid API models (GLM 5.2, Qwen 3.7 MAX). Secondary to Nous — route through Nous when possible for Tool Gateway access + credit bonus |
 | `HF_TOKEN` | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) | HuggingFace model scanning + downloading |
 
 Set these via `hermes setup` or in your `.env` file.
