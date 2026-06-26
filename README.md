@@ -57,9 +57,9 @@ Sirvir requires the [turbofit](https://github.com/SouthpawIN/turbofit) skill to 
 hermes skills tap add SouthpawIN/turbofit
 hermes skills install turbofit
 
-# 2. Install Sirvir
+# 2. Add the Sirvir repo and install
 hermes skills tap add SouthpawIN/sirvir
-hermes skills install sirvir
+hermes skills install SouthpawIN/sirvir/skills/sirvir
 
 # 3. Start using it
 hermes -p sirvir

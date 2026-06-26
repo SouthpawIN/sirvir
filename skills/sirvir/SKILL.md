@@ -31,7 +31,7 @@ Sirvir is an autonomous Hermes Agent profile that manages your entire model laye
 ```bash
 # Install (requires turbofit first)
 hermes skills tap add SouthpawIN/turbofit && hermes skills install turbofit
-hermes skills tap add SouthpawIN/sirvir && hermes skills install sirvir
+hermes skills tap add SouthpawIN/sirvir && hermes skills install SouthpawIN/sirvir/skills/sirvir
 
 # Start the profile
 hermes -p sirvir

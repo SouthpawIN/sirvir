@@ -1,5 +1,5 @@
 # distribution.yaml — Sirvir profile distribution manifest
-# Install with: hermes skills tap add SouthpawIN/sirvir && hermes skills install sirvir
+# Install with: hermes skills tap add SouthpawIN/sirvir && hermes skills install SouthpawIN/sirvir/skills/sirvir
 name: sirvir
 version: "1.0.0"
 description: >-
