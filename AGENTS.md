@@ -14,12 +14,14 @@ Sirvir is the **autonomous model lifecycle manager and competitive intelligence 
 8. **Token usage monitoring & budget** — tracking real spend from Hermes state.db against a monthly budget
 9. **Model suggestions** — recommending models based on hardware, use case, and budget (local or API)
 10. **Consolidated logging** — all activities streamed to Discord, blog, and GitHub simultaneously
+11. **GPU watchdog** — autonomous VRAM monitoring that auto-scales under pressure without user intervention
+12. **Fleet benchmark publishing** — daily benchmark results pushed to GitHub for other turbofit installs to pull
 
 Every other agent in the fleet runs on the infrastructure he maintains.
 
-## Primary Skill: turbofit v5.1
+## Primary Skill: turbofit v5.2
 
-Sirvir operates the `turbofit` skill as his primary toolset. Turbofit is the opinionated unified LLM backend for Hermes Agent — it manages the entire lifecycle of LLMs: detecting GPU, picking the best model, launching local servers, wiring API providers, managing systemd daemons, scaling under VRAM pressure, tracking real-time pricing, and auto-updating a model database daily.
+Sirvir operates the `turbofit` skill as his primary toolset. Turbofit is the opinionated unified LLM backend for Hermes Agent — it manages the entire lifecycle of LLMs: detecting GPU, picking the best model, launching local servers, wiring API providers, managing systemd daemons, scaling under VRAM pressure via an autonomous GPU watchdog, tracking real-time pricing, publishing fleet benchmarks to GitHub daily, and auto-updating a model database daily.
 
 ### Key turbofit commands Sirvir uses:
 
@@ -36,6 +38,8 @@ Sirvir operates the `turbofit` skill as his primary toolset. Turbofit is the opi
 | `name <alias> <path>` | Map an alias to a GGUF file path |
 | `serve recommend` | Scan catalog, rank by fit (ctx≥64K, tok/s≥25, Q4, vision) |
 | `serve bench <alias>` | Run lm-eval-harness benchmark on a model |
+| `serve bench pipeline` | Run full benchmark pipeline on all catalog models |
+| `serve bench pull` | Download latest benchmark results from GitHub |
 | `serve bench compare_27b` | Compare 27B-class models head-to-head |
 | `serve api list` | Show curated NVIDIA NIM models with pricing/vision/ctx |
 | `serve api use <rank> [main\|aux]` | Wire a NIM model into Hermes config |
@@ -415,32 +419,32 @@ The daily sweep — keeps everything current:
 **Script**: `python3 ~/.hermes/profiles/sirvir/skills/turbofit/scripts/research-models.py`
 **Output**: `~/.hermes/profiles/sirvir/skills/turbofit/references/research-report.md`
 
-### 2. Auto-Benchmarking (Weekly, Sunday 2:00 AM)
+### 2. Auto-Benchmarking (Daily, 3:00 AM)
 
-Full benchmark sweep — local + API + backends:
+Full benchmark sweep using the new pipeline:
 
-1. Run `serve bench darwin-28b-reason` — main model (all backends)
-2. Run `serve bench carnice` — aux model (all backends)
-3. Run benchmarks on any new models added during the week
-4. Run API model benchmarks (GLM 5.2, Qwen 3.7 MAX, DeepSeek V4 Pro/Flash, MiniMax M3, Kimi K2.6/K2.7, Mimo V2.5, etc.)
-5. Compare results against previous benchmarks (detect regressions)
-6. Update backend performance database
-7. Update API model competitive intelligence database
-8. Post weekly benchmark report to blog + Discord + GitHub
+1. Run `python3 scripts/benchmark-pipeline.py --push --gpu 1 --ctx 131072`
+2. Script automatically: stops daemons, benchmarks each model, writes JSON, pushes to GitHub
+3. Results published to `SouthpawIN/turbofit/skills/turbofit/references/benchmark-results.json`
+4. All turbofit installs can pull with `serve bench pull`
+5. Compare against previous day's results (detect regressions from driver/backend updates)
 
 **Scheduled for off-hours** to minimize fleet impact.
 
-### 3. Scaling Checks (Every 4 Hours)
+### 3. Scaling Checks (Every 30 Seconds — Automated)
 
-VRAM + health + backend spot-check:
+The **turbofit-scaling-watcher** systemd service runs continuously:
 
-1. Run `serve vram` — get live VRAM state
-2. If free VRAM < 14GB → consider downscale
-3. Run `serve downscale` — walk the Beefy-tier ladder conservatively
-4. Check that no sessions are active before killing a model
-5. Quick speed test on current backend (spot-check)
-6. Log state change to memory + consolidated log
-7. Notify Discord if a model swap occurred
+1. Polls `nvidia-smi` every 30 seconds for free VRAM
+2. 4-tier ladder with automatic action:
+   - **Tier 0** (>=24GB free): Both local models running, Hermes on local
+   - **Tier 1** (<16GB free): Stop aux daemons (Carnice), main stays
+   - **Tier 2** (<8GB free): Stop main, switch Hermes config to API (GLM 5.2 via Nous)
+   - **Tier 3** (<4GB free): Critical - ensure everything local is stopped
+3. Hysteresis: recovery thresholds are 4GB higher than stop thresholds (prevents flapping)
+4. Auto-restores: API -> local -> aux when VRAM recovers
+5. User preferences in `~/.config/turbofit/preferences.yaml`
+6. No human intervention needed - this is the "conscious stream"
 
 ### 4. Health Monitoring (Hourly)
 

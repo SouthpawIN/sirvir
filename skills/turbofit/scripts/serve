@@ -15,11 +15,95 @@
 set -euo pipefail
 
 TURBOFIT_ROOT="${TURBOFIT_ROOT:-${HOME}/.local/share/turbofit}"
-CATALOG="${HOME}/.config/turbofit/models.yaml"
-HERMES_CONFIG="${HOME}/.hermes/config.yaml"
+TURBOFIT_CONFIG_DIR="${HOME}/.config/turbofit"
+CATALOG="${TURBOFIT_CONFIG_DIR}/models.yaml"
+CURATED="${TURBOFIT_CONFIG_DIR}/curated.yaml"
+
+# Resolve Hermes config path — works on standard, profile, and Docker installs
+if [ -n "${HERMES_HOME:-}" ]; then
+    HERMES_CONFIG="${HERMES_HOME}/config.yaml"
+else
+    HERMES_CONFIG="${HOME}/.hermes/config.yaml"
+fi
 NVIDIA_API_BASE="https://integrate.api.nvidia.com/v1"
 
-mkdir -p "${TURBOFIT_ROOT}"/{logs,pid,port,strings,launchers} "${HOME}/.config/turbofit"
+mkdir -p "${TURBOFIT_ROOT}"/{logs,pid,port,strings,launchers} "${TURBOFIT_CONFIG_DIR}"
+
+# Export paths for embedded Python heredocs
+export TURBOFIT_CATALOG="${CATALOG}"
+export TURBOFIT_CURATED="${CURATED}"
+export TURBOFIT_HERMES_CONFIG="${HERMES_CONFIG}"
+
+# Bootstrap empty catalog + curated slots if missing (first run)
+if [ ! -f "${CATALOG}" ]; then
+    cat > "${CATALOG}" <<'YAML'
+# turbofit model catalog
+# Register models with: serve register <alias> <path> [--launcher llama-cpp] [--port N]
+# Or edit this file directly.
+# Schema: https://github.com/SouthpawIN/turbofit#catalog-schema
+models: {}
+YAML
+fi
+
+if [ ! -f "${CURATED}" ]; then
+    cat > "${CURATED}" <<'YAML'
+# turbofit curated slots — used by `serve auto` to pick models
+# Each slot has tier keys (s/sf/sd/f/c) with lists of entries.
+# Edit to match your local models and API preferences.
+slots:
+  # LOCAL MAIN — your GPU models, ranked by tier
+  main_local:
+    description: Local main — runs on your GPU. Register models with `serve register`.
+    # Uncomment and set to your models:
+    # s:
+    # - alias: my-27b-model
+    #   why: Smartest model I have
+    #   tok_s_target: 38
+    #   ctx_target: 262144
+    #   vision: true
+    #   vram_gb: 17
+
+  # LOCAL AUX — secondary model for vision/aux tasks
+  aux_local:
+    description: Local aux — secondary model (vision, compression, etc.)
+    # sd:
+    # - alias: my-35b-moe
+    #   why: MoE 35B/3B-active, vision, 1M ctx
+    #   tok_s_target: 110
+    #   ctx_target: 262144
+    #   vision: true
+    #   vram_gb: 11
+
+  # API MAIN — used when no local GPU or --api flag
+  main_api:
+    description: API main picks — free models first, ranked by reasoning quality.
+    s:
+    - alias: deepseek-v4-pro
+      provider: nvidia-nim
+      model_id: deepseek-ai/deepseek-v4-pro
+      why: Best free reasoning + coding. 1M ctx. Free on NIM.
+      vision: false
+      free: true
+    sf:
+    - alias: deepseek-v4-flash
+      provider: nvidia-nim
+      model_id: deepseek-ai/deepseek-v4-flash
+      why: Fast reasoning, free tier.
+      vision: false
+      free: true
+
+  # API AUX — vision-capable, free first
+  aux_api:
+    description: API aux picks — vision required, free first.
+    sf:
+    - alias: minimax-m3
+      provider: nvidia-nim
+      model_id: minimaxai/minimax-m3
+      why: Free vision model. 1M ctx, image+video.
+      vision: true
+      free: true
+YAML
+fi
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Launcher registry
@@ -99,6 +183,7 @@ declare -A PRESET_FLAGS=(
 # ─────────────────────────────────────────────────────────────────────────────
 
 NVIDIA_NIM_FILE="${TURBOFIT_ROOT}/nvidia-nim-curated.yaml"
+export TURBOFIT_NIM_FILE="${NVIDIA_NIM_FILE}"
 
 write_nvidia_nim_list() {
     cat > "${NVIDIA_NIM_FILE}" <<'YAML'
@@ -333,7 +418,7 @@ alias_info() {
     python3 - "$alias" <<'PYEOF'
 import sys, os, yaml
 alias = sys.argv[1]
-catalog = os.path.expanduser("~/.config/turbofit/models.yaml")
+catalog = os.environ.get("TURBOFIT_CATALOG", os.path.expanduser("~/.config/turbofit/models.yaml"))
 if not os.path.exists(catalog):
     print("", file=sys.stderr); sys.exit(1)
 with open(catalog) as f:
@@ -363,7 +448,7 @@ alias_full() {
     python3 - "$alias" <<'PYEOF'
 import sys, os, yaml, json
 alias = sys.argv[1]
-catalog = os.path.expanduser("~/.config/turbofit/models.yaml")
+catalog = os.environ.get("TURBOFIT_CATALOG", os.path.expanduser("~/.config/turbofit/models.yaml"))
 if not os.path.exists(catalog):
     print("{}", file=sys.stderr); sys.exit(1)
 with open(catalog) as f:
@@ -393,7 +478,7 @@ resolve_extra_args() {
     python3 - "$alias" <<'PYEOF'
 import sys, os, yaml
 alias = sys.argv[1]
-catalog = os.path.expanduser("~/.config/turbofit/models.yaml")
+catalog = os.environ.get("TURBOFIT_CATALOG", os.path.expanduser("~/.config/turbofit/models.yaml"))
 if not os.path.exists(catalog):
     sys.exit(0)
 with open(catalog) as f:
@@ -658,6 +743,14 @@ launch_server() {
 
 stop_server() {
     local alias="$1"
+    local stopped=0
+    # Try systemd daemon first (turbofit-<alias>.service)
+    if systemctl --user is-active "turbofit-${alias}.service" >/dev/null 2>&1; then
+        systemctl --user stop "turbofit-${alias}.service" 2>/dev/null
+        echo "✓ Stopped ${alias} (systemd daemon)"
+        stopped=1
+    fi
+    # Also check PID-file managed servers (direct serve launches)
     if [ -f "${TURBOFIT_ROOT}/pid/${alias}" ]; then
         local pid
         pid=$(cat "${TURBOFIT_ROOT}/pid/${alias}")
@@ -667,13 +760,20 @@ stop_server() {
             kill -9 "${pid}" 2>/dev/null || true
         fi
         rm -f "${TURBOFIT_ROOT}/pid/${alias}" "${TURBOFIT_ROOT}/port/${alias}"
-        echo "✓ Stopped ${alias}"
-    else
-        echo "No running server for: ${alias}"
+        echo "✓ Stopped ${alias} (pid ${pid})"
+        stopped=1
     fi
+    [ "$stopped" -eq 0 ] && echo "No running server for: ${alias}"
 }
 
 stop_all() {
+    # Stop systemd-managed daemons
+    while IFS= read -r svc; do
+        local alias
+        alias=$(echo "$svc" | sed 's/turbofit-//; s/\.service//')
+        stop_server "${alias}"
+    done < <(systemctl --user list-units --all --no-legend 2>/dev/null | grep -o 'turbofit-[^ ]*\.service' | sort -u)
+    # Stop PID-file managed servers (direct serve launches)
     if [ -d "${TURBOFIT_ROOT}/pid" ]; then
         for pid_file in "${TURBOFIT_ROOT}/pid"/*; do
             [ -f "${pid_file}" ] || continue
@@ -767,8 +867,8 @@ slot = sys.argv[1]             # "main" or "aux"
 want_vision = sys.argv[2] == "true"
 prefer_free = sys.argv[3] == "true"
 
-curated_path = os.path.expanduser("~/.config/turbofit/curated.yaml")
-catalog_path = os.path.expanduser("~/.config/turbofit/models.yaml")
+curated_path = os.environ.get("TURBOFIT_CURATED", os.path.expanduser("~/.config/turbofit/curated.yaml"))
+catalog_path = os.environ.get("TURBOFIT_CATALOG", os.path.expanduser("~/.config/turbofit/models.yaml"))
 
 if not os.path.exists(curated_path):
     print(json.dumps({"error": "curated.yaml missing"})); sys.exit(1)
@@ -863,7 +963,7 @@ role = sys.argv[1]
 want_vision = sys.argv[2] == "true"
 prefer_free = sys.argv[3] == "true"
 
-curated_path = os.path.expanduser("~/.config/turbofit/curated.yaml")
+curated_path = os.environ.get("TURBOFIT_CURATED", os.path.expanduser("~/.config/turbofit/curated.yaml"))
 if not os.path.exists(curated_path):
     print(json.dumps({"error": "curated.yaml missing"}))
     sys.exit(1)
@@ -1022,8 +1122,8 @@ serve_auto() {
         local pick_reason
         pick_reason=$(echo "${pick_json}"    | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('reason',''))" 2>/dev/null || echo "")
 
-        pick_base_url="${API_BASE_URL[${pick_provider}]:-https://openrouter.ai/api/v1}"
-        pick_key_env="${API_KEY_ENV[${pick_provider}]:-OPENROUTER_API_KEY}"
+        pick_base_url="${API_BASE_URL[${pick_provider:-unknown}]:-https://openrouter.ai/api/v1}"
+        pick_key_env="${API_KEY_ENV[${pick_provider:-unknown}]:-OPENROUTER_API_KEY}"
 
         echo "→ Auto-pick for ${role} (API): ${pick_alias}"
         echo "  Provider: ${pick_provider}  Model: ${pick_model_id}"
@@ -1073,8 +1173,8 @@ serve_auto() {
         local pick_reason
         pick_reason=$(echo "${pick_json}"    | python3 -c "import sys,json; print(json.loads(sys.stdin.read()).get('reason',''))"   2>/dev/null || echo "")
 
-        local base_url="${API_BASE_URL[${pick_provider}]:-https://openrouter.ai/api/v1}"
-        local key_env="${API_KEY_ENV[${pick_provider}]:-OPENROUTER_API_KEY}"
+        local base_url="${API_BASE_URL[${pick_provider:-unknown}]:-https://openrouter.ai/api/v1}"
+        local key_env="${API_KEY_ENV[${pick_provider:-unknown}]:-OPENROUTER_API_KEY}"
 
         echo "→ Auto-pick for ${role} (API): ${pick_alias}"
         echo "  Provider: ${pick_provider}  Model: ${pick_model_id}"
@@ -1117,6 +1217,41 @@ print(cfg.get('model', {}).get('default', '') or '')
     echo "Free VRAM:    ${free_gb} GB"
     echo ""
 
+    # Find running aux daemons by scanning systemd services + catalog role
+    local aux_aliases=()
+    while IFS= read -r svc; do
+        local alias
+        alias=$(echo "$svc" | sed 's/turbofit-//; s/\.service//')
+        [ -z "${alias}" ] && continue
+        # Skip the main model
+        [ "${alias}" = "${current_main}" ] && continue
+        # Check if this alias has role: aux in the catalog
+        local role
+        role=$(python3 -c "
+import yaml
+with open('${CATALOG}') as f: cfg = yaml.safe_load(f) or {}
+print(cfg.get('models', {}).get('${alias}', {}).get('role', ''))
+" 2>/dev/null || echo "")
+        if [ "${role}" = "aux" ]; then
+            aux_aliases+=("${alias}")
+        fi
+    done < <(systemctl --user list-units --all --no-legend 2>/dev/null | grep -o 'turbofit-[^ ]*\.service' | sort -u)
+
+    # Also check PID-file managed aux servers
+    if [ -d "${TURBOFIT_ROOT}/pid" ]; then
+        for pid_file in "${TURBOFIT_ROOT}/pid"/*; do
+            [ -f "${pid_file}" ] || continue
+            local a; a=$(basename "${pid_file}")
+            [ "${a}" = "${current_main}" ] && continue
+            # Check if already in list
+            local skip=0
+            for existing in "${aux_aliases[@]:-}"; do
+                [ "${existing}" = "${a}" ] && skip=1 && break
+            done
+            [ "$skip" -eq 0 ] && aux_aliases+=("${a}")
+        done
+    fi
+
     # Heuristic ladder (simplified — full ladder in serve auto):
     if [ "${free_gb}" != "?" ] && awk "BEGIN{exit !(${free_gb} < 4)}"; then
         echo "⚠ Critical VRAM (<4GB). Consider API-only mode."
@@ -1126,17 +1261,15 @@ print(cfg.get('model', {}).get('default', '') or '')
     fi
     if [ "${free_gb}" != "?" ] && awk "BEGIN{exit !(${free_gb} < 8)}"; then
         echo "⚠ Tight VRAM (<8GB). Stop aux, shrink main ctx to 64K."
-        # stop aux
-        for pid_file in "${TURBOFIT_ROOT}/pid"/aux*; do
-            [ -f "${pid_file}" ] || continue
-            local a; a=$(basename "${pid_file}")
-            [ "${a}" != "${current_main}" ] && stop_server "${a}"
+        # stop all aux models
+        for a in "${aux_aliases[@]:-}"; do
+            [ -n "${a}" ] && stop_server "${a}"
         done
         # rewrite catalog ctx to 65536 and restart main
         python3 - "${current_main}" <<'PYEOF'
 import sys, yaml, os
 alias = sys.argv[1]
-p = os.path.expanduser("~/.config/turbofit/models.yaml")
+p = os.environ.get("TURBOFIT_CATALOG", os.path.expanduser("~/.config/turbofit/models.yaml"))
 with open(p) as f: cfg = yaml.safe_load(f) or {}
 if alias in cfg.get("models", {}):
     cfg["models"][alias]["ctx"] = 65536
@@ -1148,10 +1281,8 @@ PYEOF
     fi
     if [ "${free_gb}" != "?" ] && awk "BEGIN{exit !(${free_gb} < 14)}"; then
         echo "⚠ Marginal VRAM (<14GB). Stop aux."
-        for pid_file in "${TURBOFIT_ROOT}/pid"/aux*; do
-            [ -f "${pid_file}" ] || continue
-            local a; a=$(basename "${pid_file}")
-            [ "${a}" != "${current_main}" ] && stop_server "${a}"
+        for a in "${aux_aliases[@]:-}"; do
+            [ -n "${a}" ] && stop_server "${a}"
         done
         return 0
     fi
@@ -1212,7 +1343,7 @@ nvidia_nim_list() {
     [ -f "${NVIDIA_NIM_FILE}" ] || write_nvidia_nim_list
     python3 - <<'PYEOF'
 import yaml, os
-with open(os.path.expanduser("~/.local/share/turbofit/nvidia-nim-curated.yaml")) as f:
+with open(os.environ.get("TURBOFIT_NIM_FILE", os.path.expanduser("~/.local/share/turbofit/nvidia-nim-curated.yaml"))) as f:
     cfg = yaml.safe_load(f)
 print(f"Provider: {cfg['provider']}  base_url: {cfg['base_url']}")
 print(f"All 5 models have FREE endpoints on build.nvidia.com (NVIDIA_API_KEY, ~1000 RPM at signup)")
@@ -1234,7 +1365,7 @@ nvidia_nim_use() {
     python3 - "${rank_or_id}" "${role}" "${HERMES_CONFIG}" <<'PYEOF'
 import sys, os, yaml
 target, role, cfg_path = sys.argv[1], sys.argv[2], sys.argv[3]
-with open(os.path.expanduser("~/.local/share/turbofit/nvidia-nim-curated.yaml")) as f:
+with open(os.environ.get("TURBOFIT_NIM_FILE", os.path.expanduser("~/.local/share/turbofit/nvidia-nim-curated.yaml"))) as f:
     cfg = yaml.safe_load(f)
 m = next((x for x in cfg['models'] if x['rank'] == int(target) or x['api_id'] == target), None)
 if not m:
@@ -1317,7 +1448,7 @@ list_catalog() {
     fi
     python3 - <<'PYEOF'
 import yaml, os
-catalog = os.path.expanduser("~/.config/turbofit/models.yaml")
+catalog = os.environ.get("TURBOFIT_CATALOG", os.path.expanduser("~/.config/turbofit/models.yaml"))
 with open(catalog) as f:
     cfg = yaml.safe_load(f) or {}
 models = cfg.get("models", {})
@@ -1489,7 +1620,7 @@ daemon_extra_args() {
 import sys, os, yaml, json
 
 alias = sys.argv[1]
-catalog = os.path.expanduser("~/.config/turbofit/models.yaml")
+catalog = os.environ.get("TURBOFIT_CATALOG", os.path.expanduser("~/.config/turbofit/models.yaml"))
 if not os.path.exists(catalog):
     sys.exit(1)
 
@@ -1897,6 +2028,255 @@ bench_model() {
 }
 
 # ─────────────────────────────────────────────────────────────────────────────
+# mmproj management: verify, find, download, set correct mmproj per model
+# ─────────────────────────────────────────────────────────────────────────────
+
+# n_embd mapping by model family
+# Qwen3.6-27B dense (Darwin, Prism, Qwopus, Qwable, Carwin): n_embd=5120
+# Qwen3.6-35B-A3B MoE (Carnice, Darwin Apex): n_embd=2048
+# Qwen2.5-Omni-3B: n_embd=2048
+
+manage_mmproj() {
+    local action="${1:-check}"
+    local alias="${2:-}"
+
+    case "${action}" in
+        check)
+            echo "Checking mmproj for all vision models..."
+            python3 - "$CATALOG" <<'PYEOF'
+import sys, os, yaml
+
+catalog_path = sys.argv[1]
+with open(catalog_path) as f:
+    cfg = yaml.safe_load(f) or {}
+
+models = cfg.get("models", {})
+issues = []
+
+for alias, m in sorted(models.items()):
+    vision = m.get("vision", False)
+    mmproj = m.get("mmproj", "")
+    
+    if not vision:
+        continue
+    
+    if not mmproj:
+        issues.append(f"  ❌ {alias}: vision=true but NO mmproj set")
+        continue
+    
+    if not os.path.exists(mmproj):
+        issues.append(f"  ❌ {alias}: mmproj MISSING — {mmproj}")
+        continue
+    
+    # Check if it's a symlink and verify target
+    if os.path.islink(mmproj):
+        target = os.readlink(mmproj)
+        if not os.path.exists(target):
+            issues.append(f"  ❌ {alias}: mmproj BROKEN SYMLINK — {mmproj} → {target}")
+            continue
+    
+    # Determine n_embd from model path
+    path = m.get("path", "")
+    n_embd_model = "?"
+    n_embd_mmproj = "?"
+    
+    # Try to get n_embd from running model
+    port = m.get("port", 0)
+    if port:
+        try:
+            import httpx
+            resp = httpx.get(f"http://127.0.0.1:{port}/v1/models", timeout=2)
+            if resp.status_code == 200:
+                data = resp.json()
+                n_embd_model = data["data"][0]["meta"].get("n_embd", "?")
+        except:
+            pass
+    
+    # Infer n_embd from mmproj filename
+    if "mmproj-BF16" in mmproj or "mmproj-F16" in mmproj:
+        n_embd_mmproj = "2048 (MoE)"
+    elif "mmproj-F32" in mmproj:
+        # Could be 5120 (27B) or 2048 (Omni-3B) — check path
+        if "Omni" in mmproj:
+            n_embd_mmproj = "2048 (Omni-3B)"
+        else:
+            n_embd_mmproj = "5120 (27B dense)"
+    elif "Omni-3B" in mmproj:
+        n_embd_mmproj = "2048 (Omni-3B)"
+    else:
+        n_embd_mmproj = "unknown"
+    
+    # Check for mismatch
+    match = "✅" if (n_embd_model == "?" or n_embd_mmproj == "?" or str(n_embd_model) in n_embd_mmproj) else "⚠️ MISMATCH"
+    
+    if "MISMATCH" in match:
+        issues.append(f"  ⚠️ {alias}: n_embd MISMATCH — model={n_embd_model}, mmproj={n_embd_mmproj}")
+    
+    size = os.path.getsize(mmproj) if os.path.exists(mmproj) else 0
+    size_mb = size // (1024*1024)
+    link = " (symlink)" if os.path.islink(mmproj) else ""
+    print(f"  {match} {alias}: n_embd={n_embd_model} mmproj={n_embd_mmproj} ({size_mb}MB){link}")
+    print(f"       {mmproj}")
+
+if issues:
+    print("\nISSUES FOUND:")
+    for issue in issues:
+        print(issue)
+    print(f"\n{len(issues)} issue(s) found. Run 'serve mmproj fix <alias>' to resolve.")
+else:
+    print("\n✅ All mmproj files verified.")
+PYEOF
+            ;;
+        fix)
+            if [ -z "$alias" ]; then
+                echo "Usage: serve mmproj fix <alias>"
+                echo "  Finds, downloads, and sets the correct mmproj for a model."
+                echo ""
+                echo "  If the model's HF repo has an mmproj, it downloads it."
+                echo "  If not, it finds a compatible mmproj from the same model family."
+                exit 1
+            fi
+            
+            local model_path hf_repo current_mmproj
+            model_path=$(python3 -c "
+import yaml, os
+with open('$CATALOG') as f: cfg = yaml.safe_load(f)
+m = cfg.get('models', {}).get('$alias', {})
+print(m.get('path', ''))
+" 2>/dev/null)
+            hf_repo=$(python3 -c "
+import yaml, os
+with open('$CATALOG') as f: cfg = yaml.safe_load(f)
+m = cfg.get('models', {}).get('$alias', {})
+print(m.get('hf_repo', ''))
+" 2>/dev/null)
+            current_mmproj=$(python3 -c "
+import yaml, os
+with open('$CATALOG') as f: cfg = yaml.safe_load(f)
+m = cfg.get('models', {}).get('$alias', {})
+print(m.get('mmproj', ''))
+" 2>/dev/null)
+            
+            if [ -z "$model_path" ]; then
+                echo "❌ Model '$alias' not found in catalog."
+                exit 1
+            fi
+            
+            local model_dir
+            model_dir=$(dirname "$model_path")
+            
+            echo "Model: $alias"
+            echo "Path:  $model_path"
+            echo "HF:    ${hf_repo:-not set}"
+            echo "Current mmproj: ${current_mmproj:-none}"
+            echo ""
+            
+            # Check if current mmproj exists and is valid
+            if [ -n "$current_mmproj" ] && [ -f "$current_mmproj" ]; then
+                echo "✅ mmproj exists at $current_mmproj"
+                # Verify n_embd match
+                echo "Run 'serve mmproj check' to verify n_embd compatibility."
+                return 0
+            fi
+            
+            # Try to download from HF repo
+            if [ -n "$hf_repo" ]; then
+                echo "Downloading mmproj from HF repo: $hf_repo"
+                # Try common mmproj filenames
+                for mmproj_name in "mmproj-F32.gguf" "mmproj-BF16.gguf" "mmproj-f16.gguf" "mmproj-model-f16.gguf"; do
+                    echo "  Trying: $mmproj_name"
+                    if hf download "$hf_repo" --include="$mmproj_name" --local-dir "$model_dir" 2>/dev/null; then
+                        local new_mmproj="$model_dir/$mmproj_name"
+                        if [ -f "$new_mmproj" ]; then
+                            echo "  ✅ Downloaded: $new_mmproj"
+                            # Update catalog
+                            python3 -c "
+import yaml
+path = '$CATALOG'
+with open(path) as f: cfg = yaml.safe_load(f)
+cfg['models']['$alias']['mmproj'] = '$new_mmproj'
+cfg['models']['$alias']['vision'] = True
+with open(path, 'w') as f: yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
+print(f'Updated catalog: mmproj set to $new_mmproj')
+" 2>/dev/null
+                            echo "✅ mmproj set permanently in catalog."
+                            return 0
+                        fi
+                    fi
+                done
+                echo "  ⚠️ No mmproj found in HF repo."
+            fi
+            
+            # Fallback: find compatible mmproj from same model family
+            echo ""
+            echo "Searching for compatible mmproj from same model family..."
+            local model_base
+            model_base=$(basename "$model_path")
+            
+            # Determine model family
+            local n_embd_target
+            if echo "$model_base" | grep -qi "35B\|A3B\|MoE\|Apex\|Carnice"; then
+                n_embd_target="2048"
+                echo "  Model family: MoE (n_embd=2048)"
+            elif echo "$model_base" | grep -qi "Omni\|3B"; then
+                n_embd_target="2048"
+                echo "  Model family: Omni-3B (n_embd=2048)"
+            else
+                n_embd_target="5120"
+                echo "  Model family: 27B dense (n_embd=5120)"
+            fi
+            
+            # Search for existing mmproj files with matching n_embd
+            local found_mmproj=""
+            if [ "$n_embd_target" = "2048" ]; then
+                # Look for mmproj-BF16 or mmproj-f16 (MoE)
+                found_mmproj=$(find /home/sovthpaw/Models/ -name "mmproj-BF16.gguf" -o -name "mmproj-f16.gguf" 2>/dev/null | head -1)
+            else
+                # Look for mmproj-F32 (27B dense)
+                found_mmproj=$(find /home/sovthpaw/Models/ -name "mmproj-F32.gguf" -not -path "*Omni*" 2>/dev/null | head -1)
+            fi
+            
+            if [ -n "$found_mmproj" ]; then
+                echo "  Found compatible mmproj: $found_mmproj"
+                # Symlink it into the model dir
+                local new_mmproj="$model_dir/mmproj-F32.gguf"
+                if [ "$n_embd_target" = "2048" ]; then
+                    new_mmproj="$model_dir/mmproj-BF16.gguf"
+                fi
+                ln -sf "$found_mmproj" "$new_mmproj"
+                echo "  Symlinked: $new_mmproj → $found_mmproj"
+                # Update catalog
+                python3 -c "
+import yaml
+path = '$CATALOG'
+with open(path) as f: cfg = yaml.safe_load(f)
+cfg['models']['$alias']['mmproj'] = '$new_mmproj'
+cfg['models']['$alias']['vision'] = True
+with open(path, 'w') as f: yaml.dump(cfg, f, default_flow_style=False, sort_keys=False)
+print(f'Updated catalog: mmproj set to $new_mmproj')
+" 2>/dev/null
+                echo "✅ mmproj set permanently in catalog."
+                return 0
+            else
+                echo "  ❌ No compatible mmproj found on disk."
+                echo ""
+                echo "To fix manually:"
+                echo "  1. Find the correct mmproj from the model's HF repo"
+                echo "  2. Download it: hf download $hf_repo --include='mmproj*' --local-dir $model_dir"
+                echo "  3. Set it: serve register $alias $model_path --mmproj <path>"
+                return 1
+            fi
+            ;;
+        *)
+            echo "Usage: serve mmproj {check|fix <alias>}"
+            echo ""
+            echo "  check          Verify all vision models have correct mmproj"
+            echo "  fix <alias>    Find/download/set correct mmproj for a model"
+            ;;
+    esac
+}
+
+# ─────────────────────────────────────────────────────────────────────────────
 # Recommend: scan catalog, rank by Chris's criteria
 # ─────────────────────────────────────────────────────────────────────────────
 
@@ -1981,6 +2361,10 @@ OPINIONATED AUTO (turbofit v5.1 — hardware-aware, API-aware)
 FETCH / BENCH (from llama-launch)
   serve fetch <alias>                      Download missing model from HF (uses hf_repo in catalog)
   serve bench <alias>                      Run lm-eval-harness benchmark (launches model first)
+
+MMPROJ MANAGEMENT
+  serve mmproj check                      Verify all vision models have correct mmproj (n_embd match)
+  serve mmproj fix <alias>                 Find/download/set correct mmproj for a model
 
 HERMES MODEL ROUTING
   serve main <alias> [--ui tui|dashboard|gateway|desktop|herm]
@@ -2073,8 +2457,39 @@ case "${cmd}" in
     catalog)        list_catalog ;;
     register|name)  register_alias "$@" ;;
     fetch)          fetch_model "${1:-}" ;;
-    bench)          bench_model "${1:-}" ;;
+    bench)
+        case "${1:-run}" in
+            run)      bench_model "${2:-}" ;;
+            pipeline) shift; python3 "${TURBOFIT_SKILL_DIR}/scripts/benchmark-pipeline.py" "$@" ;;
+            pull)
+                echo "Pulling latest benchmark results from GitHub..."
+                curl -sL "https://raw.githubusercontent.com/SouthpawIN/turbofit/main/skills/turbofit/references/benchmark-results.json" \
+                    -o "${TURBOFIT_SKILL_DIR}/references/benchmark-results.json" 2>/dev/null
+                if [ $? -eq 0 ]; then
+                    echo "Done. Results:"
+                    python3 -c "
+import json
+with open('${TURBOFIT_SKILL_DIR}/references/benchmark-results.json') as f:
+    data = json.load(f)
+print(f\"  Date: {data.get('date','?')}\")
+print(f\"  GPU:  {data.get('gpu_name','?')}\")
+print(f\"  CTX:  {data.get('ctx','?')}\")
+print()
+print(f\"{'Model':<30} {'tok/s':>8} {'Size':>8} {'MTP':>5} {'Vis':>5}\")
+print('-'*60)
+for r in sorted(data.get('results',[]), key=lambda x: x.get('tok_s',0), reverse=True):
+    if r.get('status') == 'ok':
+        print(f\"{r['name']:<30} {r['tok_s']:>8.1f} {r.get('size_gb',0):>7.1f}G {'Y' if r.get('has_mtp') else 'N':>5} {'Y' if r.get('has_vision') else 'N':>5}\")
+"
+                else
+                    echo "Failed to download results"
+                fi
+                ;;
+            *)  echo "Usage: serve bench {run <alias>|pipeline [--push]|pull}"; exit 1 ;;
+        esac
+        ;;
     recommend)      recommend_fit ;;
+    mmproj)         manage_mmproj "$@" ;;
     auto)
         # serve auto [main|aux] [--vision] [--free] [--ui ...]
         # Forward everything to serve_auto which parses its own flags
