@@ -64,6 +64,29 @@ Sirvir ships with 6 focused sub-skills alongside the turbofit core:
 - **sirvir-serve** — External app endpoint serving
 - **sirvir-budget** — Token usage monitoring and budget alerts
 
+## Inherited Skills
+
+Sirvir also owns the model-routing skill and provider watchdog:
+
+### model-routing
+
+- **Skill**: `mlops/model-routing` — installed at `skills/mlops/model-routing/SKILL.md`
+- **Scripts**: `model_router.py`, `router_integration.py` — installed at `skills/sirvir/scripts/`
+- **What it does**: Dynamic model selection based on task type, priority, and cost. Task-type routing (financial, creative, coding, operations, quick, reasoning) with tier-aligned candidate lists.
+- **When to load**: Before dispatching coding subagents, when reviewing routing policy, when the user asks "what model for this task?"
+
+### provider_watchdog
+
+- **Script**: `provider_watchdog.py` — installed at `skills/sirvir/scripts/`
+- **What it does**: Conservative provider-outage detector. Pings your primary provider every 30 min, switches all profiles to a fallback on 3 consecutive failures, restores on recovery.
+- **When to run**: `HERMES_HOME=~/.hermes python3 ~/.hermes/profiles/sirvir/skills/sirvir/scripts/provider_watchdog.py --check-only`
+
+### apply_tier_routing
+
+- **Script**: `apply_tier_routing.py` — installed at `skills/sirvir/scripts/`
+- **What it does**: Applies premium/default/cheap tier routing to all profile config.yaml files in one pass. Supports --dry-run and --verify modes.
+- **When to run**: After changing your tier assignments or provider strategy.
+
 ## Optimization Priority
 
 Strictly enforced: **262K context → 30 tok/s → 1M context → max speed**
