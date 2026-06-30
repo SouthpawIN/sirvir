@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
 """Model Router — usage-tier aware model selection.
 
-This router now classifies profile-level and fleet-level usage before scoring
+This router classifies profile-level and fleet-level usage before scoring
 candidate providers/models. NVIDIA-backed free lanes are available only when
 the governing usage tier is light.
+
+For per-session token usage and cost, use the native Hermes `/usage` slash
+command. This router answers the fleet-wide question: "given my usage tier,
+which model should this profile use?"
 """
 
 from __future__ import annotations

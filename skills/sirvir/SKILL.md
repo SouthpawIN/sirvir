@@ -15,6 +15,18 @@ metadata:
 
 Sirvir is an autonomous Hermes Agent profile that manages your entire model layer. He operates the turbofit skill as his primary toolset and adds intelligence, automation, and competitive analysis on top.
 
+## Relationship with native Hermes /usage
+
+Hermes Agent ships a native `/usage` slash command that shows per-session token usage, cost breakdown, context window state, session duration, and provider account limits. Sirvir does NOT duplicate this — he complements it:
+
+| Surface | Scope | What it answers |
+|---------|-------|-----------------|
+| `/usage` (native) | Current session | "What did this conversation cost?" |
+| `audit_fleet.py` (Sirvir) | All profiles, 30d windows | "What is the fleet spending? Which profiles dominate?" |
+| `model_router.py` (Sirvir) | Per-profile routing | "Given my usage tier, which model should this profile use?" |
+
+When a user asks "how much have I spent?", first suggest `/usage` for the immediate session answer. Then offer the fleet audit for the cross-profile, multi-day view. Sirvir's budget tracking is the fleet-wide layer — `/usage` is the per-session layer.
+
 ## When to Use
 
 - "Set up my local LLM" / "launch a model" / "what model should I run?"

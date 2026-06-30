@@ -19,6 +19,18 @@ metadata:
 
 This skill is the **cost layer** of the Sirvir model fleet. The turbofit core skill serves models; sirvir-budget tracks what they actually cost — reading real usage from Hermes `state.db`, projecting monthly spend, alerting when thresholds are hit, and suggesting upgrades or downgrades based on utilization. The daily 6:00 AM research cron delegates the budget check to this workflow.
 
+## Relationship with native Hermes /usage
+
+Hermes Agent ships a native `/usage` slash command that shows per-session token usage, cost breakdown, context window state, session duration, and provider account limits. Sirvir-budget does NOT duplicate this — it complements it:
+
+| Surface | Scope | What it answers |
+|---------|-------|-----------------|
+| `/usage` (native) | Current session | "What did this conversation cost?" |
+| `audit_fleet.py` (Sirvir-budget) | All profiles, 30d windows | "What is the fleet spending? Which profiles dominate? What's the monthly projection?" |
+| `verify_budget_docs.py` (Sirvir-budget) | Budget config validation | "Are the budget docs consistent and up to date?" |
+
+When a user asks about spending, first suggest `/usage` for the immediate session answer. Then offer the fleet audit for the cross-profile, multi-day view. Sirvir-budget is the fleet-wide cost layer — `/usage` is the per-session cost layer.
+
 ## First-time setup: audit your fleet
 
 Before using the budget skill, run the fleet audit to discover your profiles, their current models, and token usage:

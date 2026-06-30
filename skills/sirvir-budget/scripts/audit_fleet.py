@@ -8,6 +8,10 @@ It will:
 3. Read each profile's state.db to aggregate usage over 24h / 7d / 30d
 4. Compute profile-level usage tiers from historical behavior
 5. Print a fleet-wide summary with cache rates, cost, and governing evidence
+
+For per-session token usage and cost, use the native Hermes `/usage` slash
+command. This audit answers the fleet-wide question: "what is the fleet
+spending, and which profiles dominate?"
 """
 
 from __future__ import annotations
