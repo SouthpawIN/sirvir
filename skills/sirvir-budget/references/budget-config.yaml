@@ -3,13 +3,13 @@
 # Sirvir recalibrates all projections and alerts against this file on every change.
 #
 # FIRST-TIME SETUP: Run the audit to discover your fleet, then fill in your values.
-#   python3 ~/.hermes/profiles/sirvir/skills/sirvir-budget/scripts/verify_budget_docs.py
-#   python3 ~/.hermes/profiles/sirvir/skills/sirvir-budget/scripts/audit_fleet.py
+#   python3 ${SIRVIR_SKILL_DIR}-budget/scripts/audit_fleet.py
+#   python3 ${SIRVIR_SKILL_DIR}-budget/scripts/verify_budget_docs.py
 
 # ── Monthly budget ──────────────────────────────────────────────
-monthly_budget_usd: 50.00          # YOUR monthly API budget — change this
+monthly_budget_usd: 550.00          # User-set monthly budget
 currency: USD
-cycle_day: 1                        # 1st of month default (reset day)
+cycle_day: 1                         # 1st of month default (reset day)
 
 # ── Alert thresholds (fraction of monthly_budget_usd) ───────────
 alert_thresholds:
@@ -18,62 +18,42 @@ alert_thresholds:
   red: 1.00                         # 100% — exhausted, switch to free only
 
 # ── Post-upgrade scorecard anchors ───────────────────────────────
-# These are the operational thresholds for the weekly budget scorecard.
-# Adjust these to match your budget and risk tolerance.
 scorecard:
-  # Monthly spend projection thresholds
-  spend_green: 40.00                # below this = healthy
-  spend_yellow: 45.00               # below this = expected band
-  spend_orange: 50.00               # below this = watch
-  spend_red: 60.00                  # above this = intervene
-
-  # Effective cost per 1M tokens
-  effective_rate_green: 0.12        # below this = strong economics
-  effective_rate_yellow: 0.125      # below this = expected band
-  effective_rate_orange: 0.14       # below this = degrading
-  effective_rate_red: 0.15          # above this = intervene
-
-  # Premium-lane share (fraction of total traffic)
-  # "Premium" = your most expensive model lane
-  premium_share_green: 0.70         # below this = healthy mix
-  premium_share_yellow: 0.80        # below this = acceptable
-  premium_share_orange: 0.90        # below this = watch
-  premium_share_red: 1.00           # above this = intervene
-
-  # Cache performance target
-  cache_rate_green: 0.80            # above this = strong
-  cache_rate_yellow: 0.70           # above this = acceptable
-  cache_rate_orange: 0.60           # above this = watch
-  cache_rate_red: 0.00              # below this = intervene
+  spend_green: 475.00
+  spend_yellow: 500.00
+  spend_orange: 550.00
+  spend_red: 600.00
+  effective_rate_green: 0.12
+  effective_rate_yellow: 0.125
+  effective_rate_orange: 0.14
+  effective_rate_red: 0.15
+  premium_share_green: 0.70
+  premium_share_yellow: 0.80
+  premium_share_orange: 0.90
+  premium_share_red: 1.00
+  cache_rate_green: 0.80
+  cache_rate_yellow: 0.70
+  cache_rate_orange: 0.60
+  cache_rate_red: 0.60
 
 # ── Cache-aware planning bands ($/1M effective) ─────────────────
-# Used for converting beta GPU-time billing to production token-billing forecasts.
-# These are scenario-planning rates, not market prices.
-# Adjust based on your expected cache performance and provider pricing.
 planning_bands:
-  optimistic: 0.11                  # best-case post-cache effective rate
-  base: 0.125                       # expected post-cache effective rate
-  conservative: 0.14                # worst-case post-cache effective rate
+  optimistic: 0.11
+  base: 0.125
+  conservative: 0.14
 
-# ── Beta period tracking (optional) ──────────────────────────────
-# If you're on a subscription/GPU-time provider where state.db shows $0,
-# fill this in to compute effective cost from subscription / token volume.
+# ── Beta period tracking ─────────────────────────────────────────
 beta:
-  active: false                      # true = fleet is in beta, costs are subscription-based
-  provider: ""                       # e.g. "ollama-cloud"
-  subscription_cost_usd: 0.00        # weekly/monthly subscription cost
-  billing_period: weekly             # weekly | monthly
-  notes: ""
+  active: true
+  provider: ollama-cloud
+  subscription_cost_usd: 100.00
+  billing_period: monthly
+  plan: max
+  notes: "30-day Ollama Max test starting 2026-07-04. $100/month flat. Evaluate vs Nous per-token at end of July."
 
-# ── Production provider (post-beta, optional) ────────────────────
+# ── Production provider (post-beta) ──────────────────────────────
 production:
-  primary_provider: ""               # provider after beta cutover (e.g. "nous", "openrouter")
-  cutover_date: ""                   # planned cutover date (YYYY-MM-DD)
-  notes: ""
-
-# ── Notes ────────────────────────────────────────────────────────
-# - User adjustable: Sirvir recalibrates on change.
-# - The post-upgrade scorecard reads its thresholds from here.
-# - The cache-aware budget ladder reads planning_bands from here.
-# - During beta, effective cost = subscription_cost / total_tokens (computed live).
-# - Run scripts/audit_fleet.py to discover your profiles and current spend.
+  primary_provider: ollama-cloud
+  fallback_provider: nous
+  cutover_date: "2026-08-04"
+  notes: "Decision at end of 30-day Max test. If Max handles 4B/month with headroom, stay on ollama-cloud. If limits hit, switch to Nous per-token."

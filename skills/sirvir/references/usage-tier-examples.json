@@ -1,0 +1,122 @@
+{
+  "classification_cases": [
+    {
+      "name": "light_profile",
+      "scope": "profile",
+      "windows": {
+        "30d": {"sessions": 12, "total_tokens": 480000, "monthly_equivalent_tokens": 480000, "monthly_equivalent_sessions": 12, "avg_tokens_per_session": 40000},
+        "7d": {"sessions": 4, "total_tokens": 112000, "monthly_equivalent_tokens": 480000, "monthly_equivalent_sessions": 17.14, "avg_tokens_per_session": 28000},
+        "24h": {"sessions": 1, "total_tokens": 40000, "monthly_equivalent_tokens": 1200000, "monthly_equivalent_sessions": 30, "avg_tokens_per_session": 40000}
+      },
+      "expected": {"tier": "light", "needs_followup": false}
+    },
+    {
+      "name": "moderate_profile",
+      "scope": "profile",
+      "windows": {
+        "30d": {"sessions": 120, "total_tokens": 12000000, "monthly_equivalent_tokens": 12000000, "monthly_equivalent_sessions": 120, "avg_tokens_per_session": 100000},
+        "7d": {"sessions": 30, "total_tokens": 2800000, "monthly_equivalent_tokens": 12000000, "monthly_equivalent_sessions": 128.57, "avg_tokens_per_session": 93333.33},
+        "24h": {"sessions": 4, "total_tokens": 350000, "monthly_equivalent_tokens": 10500000, "monthly_equivalent_sessions": 120, "avg_tokens_per_session": 87500}
+      },
+      "expected": {"tier": "moderate", "needs_followup": false}
+    },
+    {
+      "name": "heavy_profile",
+      "scope": "profile",
+      "windows": {
+        "30d": {"sessions": 450, "total_tokens": 90000000, "monthly_equivalent_tokens": 90000000, "monthly_equivalent_sessions": 450, "avg_tokens_per_session": 200000},
+        "7d": {"sessions": 110, "total_tokens": 21000000, "monthly_equivalent_tokens": 90000000, "monthly_equivalent_sessions": 471.43, "avg_tokens_per_session": 190909.09},
+        "24h": {"sessions": 16, "total_tokens": 2800000, "monthly_equivalent_tokens": 84000000, "monthly_equivalent_sessions": 480, "avg_tokens_per_session": 175000}
+      },
+      "expected": {"tier": "heavy", "needs_followup": false}
+    },
+    {
+      "name": "outlier_spike",
+      "scope": "profile",
+      "windows": {
+        "30d": {"sessions": 40, "total_tokens": 1200000, "monthly_equivalent_tokens": 1200000, "monthly_equivalent_sessions": 40, "avg_tokens_per_session": 30000},
+        "7d": {"sessions": 12, "total_tokens": 900000, "monthly_equivalent_tokens": 3857142.86, "monthly_equivalent_sessions": 51.43, "avg_tokens_per_session": 75000},
+        "24h": {"sessions": 2, "total_tokens": 1500000, "monthly_equivalent_tokens": 45000000, "monthly_equivalent_sessions": 60, "avg_tokens_per_session": 750000}
+      },
+      "expected": {"tier": "moderate", "outlier_detected": true}
+    },
+    {
+      "name": "corp_fleet",
+      "scope": "fleet",
+      "windows": {
+        "30d": {"sessions": 900, "total_tokens": 180000000, "monthly_equivalent_tokens": 180000000, "monthly_equivalent_sessions": 900, "avg_tokens_per_session": 200000, "active_profiles_30d": 5, "top_profile_share_30d": 0.42},
+        "7d": {"sessions": 220, "total_tokens": 50000000, "monthly_equivalent_tokens": 214285714.29, "monthly_equivalent_sessions": 942.86, "avg_tokens_per_session": 227272.73, "active_profiles_30d": 5, "top_profile_share_30d": 0.42},
+        "24h": {"sessions": 35, "total_tokens": 9000000, "monthly_equivalent_tokens": 270000000, "monthly_equivalent_sessions": 1050, "avg_tokens_per_session": 257142.86, "active_profiles_30d": 5, "top_profile_share_30d": 0.42}
+      },
+      "expected": {"tier": "corp", "needs_followup": false}
+    },
+    {
+      "name": "insufficient_evidence",
+      "scope": "profile",
+      "windows": {
+        "30d": {"sessions": 0, "total_tokens": 0, "monthly_equivalent_tokens": 0, "monthly_equivalent_sessions": 0, "avg_tokens_per_session": 0},
+        "7d": {"sessions": 0, "total_tokens": 0, "monthly_equivalent_tokens": 0, "monthly_equivalent_sessions": 0, "avg_tokens_per_session": 0},
+        "24h": {"sessions": 0, "total_tokens": 0, "monthly_equivalent_tokens": 0, "monthly_equivalent_sessions": 0, "avg_tokens_per_session": 0}
+      },
+      "expected": {"tier": "heavy", "needs_followup": true}
+    }
+  ],
+  "routing_cases": [
+    {
+      "name": "light_profile_inside_heavy_fleet",
+      "expected": {
+        "profile_tier": "light",
+        "fleet_tier": "heavy",
+        "governing_tier": "heavy",
+        "nvidia_eligible": false
+      }
+    },
+    {
+      "name": "moderate_profile_route",
+      "expected": {
+        "profile_tier": "moderate",
+        "fleet_tier": "moderate",
+        "governing_tier": "moderate",
+        "nvidia_eligible": false,
+        "best_provider": "ollama-cloud",
+        "safest_provider": "openai-codex"
+      }
+    },
+    {
+      "name": "heavy_profile_route",
+      "expected": {
+        "profile_tier": "heavy",
+        "fleet_tier": "heavy",
+        "governing_tier": "heavy",
+        "nvidia_eligible": false,
+        "best_provider": "ollama-cloud",
+        "safest_provider": "openai-codex"
+      }
+    },
+    {
+      "name": "corp_profile_route",
+      "expected": {
+        "profile_tier": "corp",
+        "fleet_tier": "corp",
+        "governing_tier": "corp",
+        "nvidia_eligible": false,
+        "best_provider": "ollama-cloud",
+        "safest_provider": "openai-codex"
+      }
+    },
+    {
+      "name": "expired_override",
+      "expected": {
+        "override_active": false,
+        "baseline_restored": true
+      }
+    },
+    {
+      "name": "active_override",
+      "expected": {
+        "override_active": true,
+        "governing_tier": "light"
+      }
+    }
+  ]
+}

@@ -15,7 +15,7 @@ All scorecard thresholds are defined in `turbofit/references/budget-config.yaml`
 # Read current scorecard thresholds
 python3 -c "
 import yaml
-with open('~/.hermes/profiles/sirvir/skills/turbofit/references/budget-config.yaml') as f:
+with open('${HERMES_PROFILE_DIR}/skills/turbofit/references/budget-config.yaml') as f:
     cfg = yaml.safe_load(f)
 sc = cfg['scorecard']
 print('Spend thresholds:')
@@ -177,7 +177,7 @@ Weekly judgment
 ### If projected monthly spend is above `scorecard.spend_orange`
 - review premium share immediately
 - move more borderline workflows to the default or cheap tier
-- inspect whether high-volume admin, comms, personal, or coordination work is accidentally using the premium tier
+- inspect whether high-volume admin, example-comms-profile, example-light-profile, or coordination work is accidentally using the premium tier
 
 ### If projected monthly spend is above `scorecard.spend_red`
 - perform a hard review of all premium defaults

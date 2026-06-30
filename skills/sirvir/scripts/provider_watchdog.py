@@ -11,17 +11,17 @@ Policy after 2026-06-29 update (tier plan beta):
   (openai-codex:gpt-5.4), not gpt-5.5.
 - When Ollama recovers, restore both provider AND model.default.
 
-Tier plan (beta: ollama-cloud substitutes for Nous until 7/4 cutover):
-- Premium profiles (default, maf, research): primary = glm-5.2
-- Default profiles (rollout-auto, sirvir, garry-builds): primary = deepseek-v4-pro
-- Cheap profiles (comms, forge-frame, personal): primary = deepseek-v4-flash
+Tier plan (30-day Ollama Max test, 7/4 - 8/4):
+- Premium profiles (research only): primary = glm-5.2
+- Default profiles (default, example-maf-profile, example-rollout-profile, sirvir, example-builds-profile): primary = deepseek-v4-pro
+- Cheap profiles (example-comms-profile, example-forge-profile, example-light-profile): primary = deepseek-v4-flash
 - Fallback for all profiles: openai-codex / gpt-5.4 (expires 7/4)
-- After 7/4 cutover: premium text lanes move to Nous, watchdog will be updated again.
+- After 30-day test (8/4): if Max limits hit, switch to Nous per-token. Watchdog updated then.
 
-Authoritative policy: ~/.hermes/profiles/sirvir/skills/sirvir/brain/0_Admin/fleet-routing-and-compression-policy-2026-06-28.md
+Authoritative policy: ${HERMES_HOME}/home/brain/0_Admin/fleet-routing-and-compression-policy.md
 
 Run manually:
-    HERMES_HOME=~/.hermes python3 ~/.hermes/profiles/sirvir/skills/sirvir/scripts/provider_watchdog.py --check-only
+    HERMES_HOME=${HERMES_HOME} python3 ${HERMES_PROFILE_DIR}/sirvir/skills/sirvir/scripts/provider_watchdog.py --check-only
 '''
 import json
 import os
@@ -33,7 +33,7 @@ import subprocess
 from pathlib import Path
 from datetime import datetime, timezone
 
-HERMES_HOME = Path(os.environ.get("HERMES_HOME", os.path.expanduser("~/.hermes")))
+HERMES_HOME = Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data")))
 STATE_PATH = HERMES_HOME / "provider_watchdog_state.json"
 
 PRIMARY_PROVIDER = "ollama-cloud"
@@ -44,20 +44,20 @@ FAILURES_BEFORE_SWITCH = 3
 
 # Primary (ollama-cloud) models per profile.
 # Tier plan (beta: ollama-cloud substitutes for Nous until 7/4 cutover):
-# - Premium (default, maf, research) -> glm-5.2
-# - Default (rollout-auto, sirvir, garry-builds) -> deepseek-v4-pro
-# - Cheap (comms, forge-frame, personal) -> deepseek-v4-flash
+# - Premium (research only) -> glm-5.2
+# - Default (default, example-maf-profile, example-rollout-profile, sirvir, example-builds-profile) -> deepseek-v4-pro
+# - Cheap (example-comms-profile, example-forge-profile, example-light-profile) -> deepseek-v4-flash
 # After 7/4 cutover: premium text lanes move to Nous, update this map.
 DOMAIN_PRIMARY_MODELS = {
-    "": "glm-5.2",
-    "maf": "glm-5.2",
+    "": "deepseek-v4-pro",
+    "example-maf-profile": "deepseek-v4-pro",
     "research": "glm-5.2",
-    "rollout-auto": "deepseek-v4-pro",
+    "example-rollout-profile": "deepseek-v4-pro",
     "sirvir": "deepseek-v4-pro",
-    "garry-builds": "deepseek-v4-pro",
-    "comms": "deepseek-v4-flash",
-    "forge-frame": "deepseek-v4-flash",
-    "personal": "deepseek-v4-flash",
+    "example-builds-profile": "deepseek-v4-pro",
+    "example-comms-profile": "deepseek-v4-flash",
+    "example-forge-profile": "deepseek-v4-flash",
+    "example-light-profile": "deepseek-v4-flash",
 }
 
 # Fallback (openai-codex) models per profile.
@@ -65,26 +65,26 @@ DOMAIN_PRIMARY_MODELS = {
 DEFAULT_FALLBACK_MODEL = "gpt-5.4"
 DOMAIN_FALLBACK_MODELS = {
     "": "gpt-5.4",
-    "maf": "gpt-5.4",
-    "rollout-auto": "gpt-5.4",
+    "example-maf-profile": "gpt-5.4",
+    "example-rollout-profile": "gpt-5.4",
     "sirvir": "gpt-5.4",
-    "garry-builds": "gpt-5.4",
-    "personal": "gpt-5.4",
+    "example-builds-profile": "gpt-5.4",
+    "example-light-profile": "gpt-5.4",
     "research": "gpt-5.4",
-    "comms": "gpt-5.4",
-    "forge-frame": "gpt-5.4",
+    "example-comms-profile": "gpt-5.4",
+    "example-forge-profile": "gpt-5.4",
 }
 
 PROFILES = [
     "",
-    "maf",
+    "example-maf-profile",
     "research",
-    "rollout-auto",
+    "example-rollout-profile",
     "sirvir",
-    "garry-builds",
-    "comms",
-    "forge-frame",
-    "personal",
+    "example-builds-profile",
+    "example-comms-profile",
+    "example-forge-profile",
+    "example-light-profile",
 ]
 
 

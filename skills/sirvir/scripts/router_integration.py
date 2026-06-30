@@ -6,9 +6,9 @@ Called by the model-routing skill to dynamically switch models based on task typ
 Outputs Hermes-compatible model switch commands and JSON for programmatic use.
 
 Usage from within Hermes:
-    python ~/.hermes/profiles/sirvir/skills/sirvir/router_integration.py --task financial --priority quality
-    python ~/.hermes/profiles/sirvir/skills/sirvir/router_integration.py --prompt "Calculate IRR for..." --priority speed
-    python ~/.hermes/profiles/sirvir/skills/sirvir/router_integration.py --task coding --high-stakes
+    python ${HERMES_HOME}/home/router_integration.py --task financial --priority quality
+    python ${HERMES_HOME}/home/router_integration.py --prompt "Calculate IRR for..." --priority speed
+    python ${HERMES_HOME}/home/router_integration.py --task coding --high-stakes
 
 Output modes:
     --hermes-cmd   → prints "/model openai-codex:gpt-5.5" for direct use
@@ -23,13 +23,13 @@ import subprocess
 from pathlib import Path
 
 # Import the router
-sys.path.insert(0, str(Path("~/.hermes/profiles/sirvir/skills/sirvir")))
+sys.path.insert(0, str(Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "home"))
 from model_router import select_model, detect_task_type, load_benchmark
 
 
 def get_current_model():
     """Read current model from Hermes config."""
-    config_path = Path("~/.hermes/config.yaml")
+    config_path = Path("${HERMES_CONFIG}")
     if not config_path.exists():
         return None, None
     try:

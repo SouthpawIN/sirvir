@@ -5,7 +5,7 @@ Apply fleet tier routing to all profile config.yaml files.
 Usage:
     python3 apply_tier_routing.py [--dry-run] [--provider ollama-cloud|nous]
 
-Defaults to ollama-cloud (beta provider). Use --provider nous for post-beta cutover.
+Defaults to ollama-cloud (Max test provider). Use --provider nous for fallback.
 
 Reads the tier assignments from TIERS below and patches:
 - model.provider, model.default, model.base_url
@@ -19,15 +19,15 @@ import argparse
 
 # ── Tier assignments ──────────────────────────────────────────────────
 TIERS = {
-    "default":      "premium",
-    "maf":          "premium",
+    "default":      "default",
+    "example-maf-profile":          "default",
     "research":     "premium",
-    "rollout-auto": "default",
+    "example-rollout-profile": "default",
     "sirvir":       "default",
-    "garry-builds": "default",
-    "comms":        "cheap",
-    "forge-frame":  "cheap",
-    "personal":     "cheap",
+    "example-builds-profile": "default",
+    "example-comms-profile":        "cheap",
+    "example-forge-profile":  "cheap",
+    "example-light-profile":     "cheap",
 }
 
 MAIN_PER_TIER = {
@@ -40,15 +40,15 @@ VISION_PROVIDER = "nvidia"
 VISION_MODEL = "minimaxai/minimax-m3"
 
 CONFIG_PATHS = {
-    "default":      Path("~/.hermes/config.yaml"),
-    "maf":          Path("~/.hermes/profiles/maf/config.yaml"),
-    "research":     Path("~/.hermes/profiles/research/config.yaml"),
-    "rollout-auto": Path("~/.hermes/profiles/rollout-auto/config.yaml"),
-    "sirvir":       Path("~/.hermes/profiles/sirvir/config.yaml"),
-    "garry-builds": Path("~/.hermes/profiles/garry-builds/config.yaml"),
-    "comms":        Path("~/.hermes/profiles/comms/config.yaml"),
-    "forge-frame":  Path("~/.hermes/profiles/forge-frame/config.yaml"),
-    "personal":     Path("~/.hermes/profiles/personal/config.yaml"),
+    "default":      Path("${HERMES_CONFIG}"),
+    "example-maf-profile":          Path("${HERMES_PROFILE_DIR}/example-maf-profile/config.yaml"),
+    "research":     Path("${HERMES_PROFILE_DIR}/research/config.yaml"),
+    "example-rollout-profile": Path(str(Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "profiles" / "example-rollout-profile/config.yaml"),
+    "sirvir":       Path("${HERMES_PROFILE_DIR}/config.yaml"),
+    "example-builds-profile": Path(str(Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "profiles" / "example-builds-profile/config.yaml"),
+    "example-comms-profile":        Path("${HERMES_PROFILE_DIR}/example-comms-profile/config.yaml"),
+    "example-forge-profile":  Path(str(Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "profiles" / "example-forge-profile/config.yaml"),
+    "example-light-profile":     Path("${HERMES_PROFILE_DIR}/example-light-profile/config.yaml"),
 }
 
 

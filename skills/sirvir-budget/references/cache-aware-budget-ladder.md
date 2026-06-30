@@ -39,7 +39,7 @@ For cache-improved production planning, use three bands. These are read from `tu
 ```bash
 python3 -c "
 import yaml
-with open('~/.hermes/profiles/sirvir/skills/turbofit/references/budget-config.yaml') as f:
+with open('${HERMES_PROFILE_DIR}/skills/turbofit/references/budget-config.yaml') as f:
     cfg = yaml.safe_load(f)
 bands = cfg['planning_bands']
 for label, rate in bands.items():

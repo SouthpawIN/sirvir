@@ -1,8 +1,8 @@
 ---
 name: sirvir-budget
 description: "Token usage monitoring and budget skill. Documents how to read Hermes state.db for real usage data, track spending against a monthly budget, set alert thresholds (75% yellow, 90% orange, 100% red), and suggest upgrades/downgrades based on utilization. Complements the turbofit core skill — turbofit serves models, sirvir-budget tracks what they cost."
-version: 1.1.0
-author: SouthpawIN
+version: 1.2.0
+author: example-user
 license: MIT
 tags: [budget, token-usage, cost-tracking, state-db, alerts, spending, turbofit]
 metadata:
@@ -10,6 +10,7 @@ metadata:
     tags: [budget, token-usage, cost-tracking, state-db, alerts, spending]
     related_skills: [turbofit, sirvir-research, sirvir-serve]
   changelog: |
+    1.2.0 (2026-06-29): Added Cost Spectrum Analysis methodology (interview-driven, 5-step process). Added root profile pitfall (${HERMES_STATE_DB}). Added cache savings pitfall (consistent prompt token bases). Fixed all budget-config.yaml path references (turbofit -> sirvir-budget). Updated lane-based-cost-model with new tier assignments and empirically verified constraints. Added cost-spectrum.md reference.
     1.1.0 (2026-06-29): Fixed state.db path (per-profile, not ~/.hermes). Replaced sqlite3 CLI queries with Python sqlite3 (sqlite3 CLI not installed). Added beta-period effective-cost computation. Updated budget config reference to live file. Added fleet-wide aggregate query.
     1.0.0 (2026-06-26): Initial split from turbofit monolith. Wraps the state.db usage queries, monthly budget tracking, alert thresholds, and upgrade/downgrade suggestion logic.
 ---
@@ -17,6 +18,23 @@ metadata:
 # Sirvir-Budget — Token Usage Monitoring & Budget
 
 This skill is the **cost layer** of the Sirvir model fleet. The turbofit core skill serves models; sirvir-budget tracks what they actually cost — reading real usage from Hermes `state.db`, projecting monthly spend, alerting when thresholds are hit, and suggesting upgrades or downgrades based on utilization. The daily 6:00 AM research cron delegates the budget check to this workflow.
+
+## First-time setup: audit your fleet
+
+Before using the budget skill, run the fleet audit to discover your profiles, their current models, and token usage:
+
+```bash
+python3 ${SIRVIR_SKILL_DIR}-budget/scripts/audit_fleet.py
+```
+
+This will:
+1. Find all Hermes profiles under `${HERMES_HOME}/profiles/`
+2. Read each profile's `config.yaml` to see what models they're using
+3. Read each profile's `state.db` to aggregate token usage by model
+4. Print a fleet-wide summary with cache rates and cost estimates
+5. Identify which profiles are premium, default, or cheap tier based on their model choices
+
+After the audit, edit `references/budget-config.yaml` to set your monthly budget and thresholds.
 
 ## When to use
 
@@ -39,10 +57,10 @@ Trigger phrases: "what's my budget", "how much have I spent", "monthly projectio
 All usage data comes from Hermes's own SQLite database — real input/output/cache tokens, real cost, per model, per request. The database lives **per-profile**, not at `~/.hermes/state.db`. The correct path is:
 
 ```
-~/.hermes/profiles/<profile_name>/state.db
+${HERMES_HOME}/profiles/<profile_name>/state.db
 ```
 
-For Sirvir's own profile: `~/.hermes/profiles/sirvir/state.db`
+For Sirvir's own profile: `${HERMES_PROFILE_DIR}/state.db`
 
 > **Important**: The `sqlite3` CLI is NOT installed on this system. All queries must use Python's `sqlite3` module via `python3 -c "..."`. The queries below use this pattern.
 
@@ -52,7 +70,7 @@ For Sirvir's own profile: `~/.hermes/profiles/sirvir/state.db`
 # Check what tables exist and their schemas
 python3 -c "
 import sqlite3
-db = sqlite3.connect('~/.hermes/profiles/sirvir/state.db')
+db = sqlite3.connect('${HERMES_PROFILE_DIR}/state.db')
 tables = db.execute(\"SELECT name FROM sqlite_master WHERE type='table'\").fetchall()
 print('Tables:', [t[0] for t in tables])
 for t in tables:
@@ -69,7 +87,7 @@ All queries use the `sessions` table — the `usage` table does not exist in thi
 # Per-profile: this month's sessions by model
 python3 -c "
 import sqlite3
-db = sqlite3.connect('~/.hermes/profiles/sirvir/state.db')
+db = sqlite3.connect('${HERMES_PROFILE_DIR}/state.db')
 db.row_factory = sqlite3.Row
 rows = db.execute('''
 SELECT COALESCE(model,'') AS model,
@@ -96,7 +114,7 @@ python3 -c "
 import sqlite3, os, glob
 total_in = total_out = total_cache = 0
 total_sessions = 0
-for path in sorted(glob.glob('~/.hermes/profiles/*/state.db')):
+for path in sorted(glob.glob('${HERMES_HOME}/profiles/*/state.db')):
     prof = path.split('/')[-2]
     db = sqlite3.connect(path)
     rows = db.execute('SELECT SUM(input_tokens), SUM(output_tokens), SUM(cache_read_tokens), COUNT(*) FROM sessions').fetchone()
@@ -116,7 +134,7 @@ print(f'Cache rate: {cache_rate:.1f}%')
 
 ### Effective cost during beta (subscription billing)
 
-When the fleet runs on a subscription provider (e.g. a subscription provider), per-token costs in state.db show $0. Compute effective cost from the subscription price divided by actual token volume:
+When the fleet runs on a subscription provider (ollama-cloud), per-token costs in state.db show $0. Compute effective cost from the subscription price divided by actual token volume:
 
 ```bash
 # Effective cost per 1M tokens during beta
@@ -124,7 +142,7 @@ python3 -c "
 import sqlite3, os, glob, yaml
 
 # Read budget config
-with open('~/.hermes/profiles/sirvir/skills/turbofit/references/budget-config.yaml') as f:
+with open('${SIRVIR_SKILL_DIR}-budget/references/budget-config.yaml') as f:
     cfg = yaml.safe_load(f)
 
 sub_cost = cfg['beta']['subscription_cost_usd']
@@ -132,7 +150,7 @@ period = cfg['beta']['billing_period']
 
 # Fleet-wide token total
 total_tokens = 0
-for path in glob.glob('~/.hermes/profiles/*/state.db'):
+for path in glob.glob('${HERMES_HOME}/profiles/*/state.db'):
     db = sqlite3.connect(path)
     row = db.execute('SELECT SUM(input_tokens + output_tokens + cache_read_tokens) FROM sessions').fetchone()
     if row[0]:
@@ -150,11 +168,11 @@ else:
 
 ## Budget config
 
-The budget configuration lives at `turbofit/references/budget-config.yaml`. This is the **live source of truth** for the monthly budget, alert thresholds, scorecard anchors, planning bands, and beta/production tracking.
+The budget configuration lives at `references/budget-config.yaml` in the sirvir-budget skill directory. This is the **live source of truth** for the monthly budget, alert thresholds, scorecard anchors, planning bands, and beta/production tracking.
 
 ```bash
 # Read the current budget
-cat ~/.hermes/profiles/sirvir/skills/turbofit/references/budget-config.yaml
+cat ${SIRVIR_SKILL_DIR}-budget/references/budget-config.yaml
 ```
 
 Key fields:
@@ -175,8 +193,8 @@ The user can change the budget at any time. Sirvir recalibrates projections and 
 ```bash
 # Edit the config directly
 # Then re-run the budget check to confirm the new thresholds
-python3 ~/.hermes/profiles/sirvir/skills/turbofit/scripts/research-models.py
-cat ~/.hermes/profiles/sirvir/skills/turbofit/references/research-report.md
+python3 ${HERMES_PROFILE_DIR}/skills/turbofit/scripts/research-models.py
+cat ${HERMES_PROFILE_DIR}/skills/turbofit/references/research-report.md
 ```
 
 ## Alert thresholds
@@ -196,9 +214,9 @@ cat ~/.hermes/profiles/sirvir/skills/turbofit/references/research-report.md
 
 ```bash
 # Force a budget check on demand
-python3 ~/.hermes/profiles/sirvir/skills/turbofit/scripts/research-models.py
+python3 ${HERMES_PROFILE_DIR}/skills/turbofit/scripts/research-models.py
 # The report includes a budget status section
-grep -A 10 "Budget" ~/.hermes/profiles/sirvir/skills/turbofit/references/research-report.md
+grep -A 10 "Budget" ${HERMES_PROFILE_DIR}/skills/turbofit/references/research-report.md
 ```
 
 ## Over-budget suggestions
@@ -246,16 +264,41 @@ Recommended planning shape for this class of case:
 The session-derived reference ladder lives at `references/cache-aware-budget-ladder.md`.
 For recurring weekly reviews after rollout, use `references/post-upgrade-budget-scorecard.md`.
 For reconstructed or explained three-tier routing economics (premium / default / cheap lanes), use `references/lane-based-cost-model.md`.
+For a full fleet cost spectrum analysis (per-profile, per-token, AS-IF deployed), see `references/cost-spectrum.md` — the canonical example of interview-driven cost modeling with baseline + stretch scenarios.
+For comparing flat-rate subscription providers (Ollama Max/Pro) against per-token billing (Nous/OpenRouter), see `references/subscription-vs-per-token.md` — covers GPU-time estimation, request-count analysis, and tier-downgrade impact on subscription capacity.
 For focused verification of budget-reference edits when no canonical test suite exists, run `scripts/verify_budget_docs.py` via a temporary `/tmp/hermes-verify-*` wrapper and report the result explicitly as ad-hoc verification rather than suite green.
+For preparing sirvir-budget changes for an upstream PR to `example-user/sirvir`, see `references/upstream-contribution-workflow.md` — covers de-personalization, path normalization, and git workflow for fork-based PRs.
+For usage-tier policy and fleet-audit changes, use `references/usage-tier-hardening-validation.md` plus the live validator at `${SIRVIR_SKILL_DIR}/scripts/validate_usage_tier.py` as the compliance checklist.
+
+## Usage-tier hardening and compliance workflow
+
+When editing `scripts/audit_fleet.py` or any coupled usage-tier routing logic in Sirvir, treat the work as a policy/compliance change, not a casual script tweak.
+
+Required workflow:
+1. Preserve additive layering: discovery -> deployed lane classification -> dominant 30d classification. Do not remove discovery or simplify away deployed/dominant outputs during cleanup.
+2. Keep fleet semantics truthful: compute fleet from the full profile set first; if a CLI flag filters output to one profile, only the displayed subset changes, not the fleet rollup.
+3. For sparse-evidence follow-up gating, the blocked path must return an error + followup question only. Do not leak `provisional_recommendation` or `recommendation_lanes` unless the caller explicitly opts into conservative fallback.
+4. Validate overrides across separate invocations, not only with monkeypatched in-process helpers. Use env-overridable policy path and current timestamp so expiry/reversion is provable.
+5. If provider/dashboard snapshot inputs are part of the policy, test them with a temporary policy + snapshot file and verify `snapshot_evidence` is surfaced in outputs.
+6. Run both local verification and an independent second-agent audit before calling the change compliant.
+
+Verification minimums for this class of change:
+- `py_compile` on `audit_fleet.py`, `model_router.py`, and `validate_usage_tier.py`
+- `python3 ${SIRVIR_SKILL_DIR}/scripts/validate_usage_tier.py`
+- live blocked follow-up run that exits nonzero and hides recommendation fields
+- live conservative-fallback run that succeeds
+- live `audit_fleet.py --json` run confirming full-fleet rollup behavior
+
+Pitfall: a validator that only checks exit code and `followup_required=true` is too weak. It must also assert that blocked follow-up output does not expose recommendation payloads.
 
 ## Beta provider substitution and budget tracking
 
-When the fleet is running a beta period on a subscription provider (substituting for a per-token provider), budget tracking should note that:
+When the fleet is running a beta period on ollama-cloud (substituting for Nous), budget tracking should note that:
 
-- subscription provider costs are subscription-based (weekly quota, not per-token), so token cost in state.db may show $0 or a flat rate
-- The real cost comparison subscription vs per-token should use the subscription cost divided by actual token volume
+- ollama-cloud costs are subscription-based (weekly quota, not per-token), so token cost in state.db may show $0 or a flat rate
+- The real cost comparison ollama-cloud vs Nous should use the subscription cost divided by actual token volume
 - When the beta ends and the fleet switches to Nous, per-token costs will appear in state.db
-- Budget projections during beta should use the anticipated Nous pricing, not the current subscription $0
+- Budget projections during beta should use the anticipated Nous pricing, not the current ollama-cloud $0
 
 ### Computing effective cost during beta
 
@@ -267,7 +310,7 @@ python3 -c "
 import sqlite3, glob, yaml
 
 # Read budget config for subscription cost
-with open('~/.hermes/profiles/sirvir/skills/turbofit/references/budget-config.yaml') as f:
+with open('${SIRVIR_SKILL_DIR}-budget/references/budget-config.yaml') as f:
     cfg = yaml.safe_load(f)
 
 sub_cost = cfg['beta']['subscription_cost_usd']
@@ -275,7 +318,7 @@ period = cfg['beta']['billing_period']
 
 # Fleet-wide token total
 total_tokens = 0
-for path in glob.glob('~/.hermes/profiles/*/state.db'):
+for path in glob.glob('${HERMES_HOME}/profiles/*/state.db'):
     db = sqlite3.connect(path)
     row = db.execute('SELECT SUM(input_tokens + output_tokens + cache_read_tokens) FROM sessions').fetchone()
     if row[0]:
@@ -311,7 +354,7 @@ import sqlite3, glob, yaml
 
 # Fleet-wide token total
 total_in = total_out = total_cache = 0
-for path in glob.glob('~/.hermes/profiles/*/state.db'):
+for path in glob.glob('${HERMES_HOME}/profiles/*/state.db'):
     db = sqlite3.connect(path)
     row = db.execute('SELECT SUM(input_tokens), SUM(output_tokens), SUM(cache_read_tokens) FROM sessions').fetchone()
     if row[0]:
@@ -322,7 +365,7 @@ for path in glob.glob('~/.hermes/profiles/*/state.db'):
 total_tokens = total_in + total_out + total_cache
 
 # Read planning bands
-with open('~/.hermes/profiles/sirvir/skills/turbofit/references/budget-config.yaml') as f:
+with open('${HERMES_PROFILE_DIR}/skills/turbofit/references/budget-config.yaml') as f:
     cfg = yaml.safe_load(f)
 
 bands = cfg['planning_bands']
@@ -352,10 +395,10 @@ The budget check is steps 2-5 and 9 of the daily research workflow (owned by sir
 
 ```bash
 # The research script does all of this; the budget section is in the report
-python3 ~/.hermes/profiles/sirvir/skills/turbofit/scripts/research-models.py
+python3 ${HERMES_PROFILE_DIR}/skills/turbofit/scripts/research-models.py
 
 # Read just the budget-relevant sections
-cat ~/.hermes/profiles/sirvir/skills/turbofit/references/research-report.md | sed -n '/Budget/,/^##/p'
+cat ${HERMES_PROFILE_DIR}/skills/turbofit/references/research-report.md | sed -n '/Budget/,/^##/p'
 ```
 
 ## On-demand budget report
@@ -364,16 +407,16 @@ When the user asks "what's my budget?" or "how much have I spent?":
 
 ```bash
 # 1. Run the research script (fetches fresh pricing + reads state.db)
-python3 ~/.hermes/profiles/sirvir/skills/turbofit/scripts/research-models.py
+python3 ${HERMES_PROFILE_DIR}/skills/turbofit/scripts/research-models.py
 
 # 2. Read the report
-cat ~/.hermes/profiles/sirvir/skills/turbofit/references/research-report.md
+cat ${HERMES_PROFILE_DIR}/skills/turbofit/references/research-report.md
 
 # 3. Quick fleet-wide aggregate
 python3 -c "
 import sqlite3, glob
 total_in = total_out = total_cache = 0
-for path in glob.glob('~/.hermes/profiles/*/state.db'):
+for path in glob.glob('${HERMES_HOME}/profiles/*/state.db'):
     db = sqlite3.connect(path)
     row = db.execute('SELECT SUM(input_tokens), SUM(output_tokens), SUM(cache_read_tokens) FROM sessions').fetchone()
     if row[0]:
@@ -386,7 +429,7 @@ print(f'Fleet total: {total:,} tokens, cache rate: {cache_rate:.1f}%')
 "
 
 # 4. Compare against budget
-grep monthly_budget_usd ~/.hermes/profiles/sirvir/skills/turbofit/references/budget-config.yaml
+grep monthly_budget_usd ${HERMES_PROFILE_DIR}/skills/turbofit/references/budget-config.yaml
 ```
 
 Present to the user:
@@ -417,6 +460,116 @@ From AGENTS.md:
 - The daily research cron is registered in Sirvir's profile config; this skill is the budget-check portion of that cron.
 - Pricing data used for cost projections comes from `references/model-database.yaml`, kept current by sirvir-research's OpenRouter sync.
 - Budget-driven model swaps are executed via turbofit's `serve main`/`serve aux`/`serve auto main --free` commands.
+
+## Cost Spectrum Analysis (interview-driven methodology)
+
+When the user asks to "eval the cost spectrum" or "model out the cost on a token basis," do not jump straight to computation. Use an interview-driven methodology:
+
+1. **Define criteria first.** State what a great result looks like — format, data sources, scenarios, verification method. Reference a past example (e.g. `turbofit/references/research-report.md`) as the format to match.
+2. **Lock decisions one at a time.** Ask the user to verify each key assumption explicitly:
+   - Which fleet state to model (AS-IF deployed vs current reality vs both)
+   - Pricing source and cache-read rate assumptions
+   - Token volume basis (current actuals vs forecast vs both)
+   - Aux/compression token split methodology
+   - Output format
+3. **Compute from live data.** Read all state.db files, apply tier-assigned pricing, separate text from free aux (MiniMax M3 on NIM), compute effective $/1M rates.
+4. **Include the root profile.** The root "default" profile's state.db lives at `${HERMES_STATE_DB}` — NOT under `${HERMES_HOME}/profiles/`. The `audit_fleet.py` script only scans `${HERMES_HOME}/profiles/*/state.db` and will miss the root profile. Always check `${HERMES_STATE_DB}` separately when doing fleet-wide analysis.
+5. **Verify tier assignments.** Compare the policy-assigned tier against actual model usage in state.db. Flag mismatches explicitly.
+6. **Delegate verification.** Use a subagent to check arithmetic, completeness, and threshold application before delivering.
+
+The deliverable format: one markdown file with both scenarios (baseline + stretch), per-profile tables, fleet summary, tier breakdown, tier-assignment verification, cache gap analysis, scorecard assessment, and recommendations. See `references/cost-spectrum.md` for the canonical example.
+
+### Pitfall: root profile at ${HERMES_STATE_DB}
+
+The root "default" profile (the orchestrator) stores its state.db at `${HERMES_STATE_DB}`, not under `${HERMES_PROFILE_DIR}/default/state.db`. The `audit_fleet.py` script and the fleet-wide aggregate query both scan `${HERMES_HOME}/profiles/*/state.db` and will miss the root profile entirely. The root profile is typically the largest by token volume — missing it produces a materially wrong fleet analysis. Always check `${HERMES_STATE_DB}` separately.
+
+### Pitfall: budget-config.yaml path
+
+The budget config lives at `sirvir-budget/references/budget-config.yaml`, not `turbofit/references/budget-config.yaml`. Some older queries in this skill reference the turbofit path — use the sirvir-budget path for all budget operations.
+
+### Pitfall: cache savings must use consistent prompt token bases
+
+When computing "what if cache improved from X% to Y%," both scenarios must use the **same prompt token base** (input + cache_read). The error pattern: computing current cost on 611M prompt tokens (428M input + 183M cache) but target cost on 428M prompt tokens (86M input + 342M cache) — different bases produce a wrong savings number. Fix: lock the prompt token base first, then redistribute input/cache according to the target rate. For the root profile example: 611,389,576 prompt tokens × 30% cache = current; same 611,389,576 × 80% cache = target. The correct savings was $235.36/month, not $296.57.
+
+### Pitfall: cache hit rate IS the cost driver on GPU-time/subscription providers
+
+On flat-rate providers (ollama-cloud, Ollama Max/Pro), the billing unit is **GPU-time**, not tokens. A model with 0% cache hits burns GPU-time on every request recomputing the full context. A model with 25%+ cache hits reuses prefix computations and burns far less GPU-time per request.
+
+**Diagnosing cache gaps — full workflow:**
+
+Step 1: Check state.db for cache hit rates per model (fleet-wide):
+
+```bash
+python3 -c "
+import sqlite3, glob, os
+# Scan ALL state.db files including root and home profiles
+state_dbs = []
+for root in [os.environ.get('HERMES_HOME', str(Path.home() / '.hermes' / 'data')), os.environ.get('HERMES_HOME', str(Path.home() / '.hermes' / 'data')) + '/home']:
+    for dirpath, dirnames, filenames in os.walk(root):
+        if 'state.db' in filenames:
+            state_dbs.append(os.path.join(dirpath, 'state.db'))
+        if dirpath.count(os.sep) - root.count(os.sep) > 3:
+            dirnames.clear()
+for path in sorted(set(state_dbs)):
+    db = sqlite3.connect(path)
+    rows = db.execute('''
+        SELECT COALESCE(model,''), COUNT(*),
+               SUM(input_tokens), SUM(cache_read_tokens),
+               ROUND(100.0 * SUM(cache_read_tokens) / NULLIF(SUM(input_tokens), 0), 1)
+        FROM sessions GROUP BY model ORDER BY SUM(input_tokens) DESC
+    ''').fetchall()
+    if rows:
+        prof = path.split('/')[-2] if '/profiles/' in path else 'root'
+        print(f'=== {prof} ===')
+        for r in rows:
+            print(f'  {r[0]:30s} {r[1]:3d} sessions  {r[2] or 0:>12,} in  {r[3] or 0:>12,} cache  {r[4] or 0:>5.1f}%')
+"
+```
+
+Step 2: Check API-level cache support — does the provider return `prompt_tokens_details` with `cached_tokens`?
+
+```bash
+# Test: back-to-back same prompt, check if prompt_tokens drops or cached_tokens appears
+for i in 1 2; do
+  curl -sL --max-time 30 "https://ollama.com/v1/chat/completions" \
+    -H "Authorization: Bearer $OLLAMA_API_KEY" \
+    -H "Content-Type: application/json" \
+    -d '{"model":"<model>","messages":[{"role":"system","content":"You are a test assistant."},{"role":"user","content":"Say hello"}],"max_tokens":20,"temperature":0}' \
+    | python3 -c "import sys,json; d=json.load(sys.stdin); u=d.get('usage',{}); ptd=u.get('prompt_tokens_details',{}); print(f'prompt={u.get(\"prompt_tokens\")}, cached={ptd.get(\"cached_tokens\",\"NO DETAILS\")}')"
+  sleep 2
+done
+```
+
+Step 3: Cross-reference — if state.db shows cache hits but the API doesn't return `prompt_tokens_details`, the caching is happening at the Hermes level (system prompt prefix reuse across sessions), not at the provider API level.
+
+**Known cache hit rates on ollama-cloud (2026-06-30):**
+
+| Model | Cache Hit Rate | GPU-Time Impact |
+|-------|---------------|-----------------|
+| deepseek-v4-pro | **0%** | Maximum — every request recomputes full context |
+| glm-5.2 | 24% | Moderate — ~1/4 of context reused |
+| gpt-5.4 | 997% | Minimal — same prefix reused across sessions |
+
+**Provider cache support matrix** — see `references/provider-cache-matrix.md` for the full cross-provider analysis.
+
+A 0% cache model at 7M tokens/request burns GPU-time linearly with every turn. At 130 requests, that's ~900M tokens of GPU recomputation. A 24% cache model at the same volume saves ~216M tokens of GPU work. The dashboard "extra high usage" warning for deepseek-v4-pro is directly caused by the 0% cache rate — not by the model being inherently expensive.
+
+**When the user reports high GPU-time burn on a subscription provider, check cache hit rate before recommending a model swap.** The fix may be enabling cache (if the provider supports it for that model) rather than switching models.
+
+### Pitfall: spanning sessions inflate time-window queries
+
+When querying state.db for a time window (e.g. "last 2 hours"), only count sessions where `started_at` falls within the window. Sessions that started earlier and are still running (`ended_at IS NULL` or `ended_at > window_start`) have **lifetime token totals** — their `input_tokens` and `output_tokens` cover the entire session, not just the window. Including them produces misleadingly large numbers.
+
+Correct pattern:
+```python
+# Sessions STARTED in the window
+cur.execute("SELECT ... FROM sessions WHERE started_at > ?", (window_start,))
+
+# Do NOT use: WHERE ended_at > ? OR ended_at IS NULL
+# That pulls lifetime totals from long-running sessions.
+```
+
+If the user asks for usage "in the last X hours" and the numbers look wrong, check whether spanning sessions were included. The dashboard is the authoritative source for actual GPU-time burn; state.db can only report session-level aggregates.
 
 ## Cross-references
 

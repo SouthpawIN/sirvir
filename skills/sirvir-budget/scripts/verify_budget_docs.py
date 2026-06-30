@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env /opt/hermes/.venv/bin/python3
 """Verify budget documentation integrity and live wiring.
 
 Checks:
@@ -17,7 +17,7 @@ import glob
 
 ROOT = Path(__file__).resolve().parents[1]
 BUDGET_CONFIG = ROOT / "references" / "budget-config.yaml"
-PROFILES_ROOT = Path(os.path.expanduser("~/.hermes/profiles"))
+PROFILES_ROOT = Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "profiles"
 
 scorecard = ROOT / "references" / "post-upgrade-budget-scorecard.md"
 skill = ROOT / "SKILL.md"
@@ -123,7 +123,7 @@ else:
 # ── 5. state.db reachability ────────────────────────────────────
 state_dbs = list(PROFILES_ROOT.glob("*/state.db"))
 if not state_dbs:
-    errors.append("NO_STATE_DB: No profile state.db files found under ~/.hermes/profiles/")
+    errors.append("NO_STATE_DB: No profile state.db files found under ${HERMES_HOME}/profiles/")
 else:
     import sqlite3
     reachable = 0

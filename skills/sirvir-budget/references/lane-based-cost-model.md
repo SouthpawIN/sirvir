@@ -4,7 +4,7 @@ Use this reference when reconstructing or explaining the budget model after the 
 
 ## Core routing split
 
-The recommended fleet routing policy defines three tiers:
+The fleet routing policy (2026-06-28) defines three tiers, not two:
 
 ### Premium tier
 - primary: GLM 5.2 (via Nous)
@@ -17,7 +17,7 @@ Use premium for:
 - orchestrator profiles whose mistakes cascade downstream
 
 ### Default tier
-- primary: DeepSeek V4 Pro (provider of your choice)
+- primary: DeepSeek V4 Pro (via Nous post-7/4, ollama-cloud during beta)
 - This is the smart middle lane — good quality without premium-by-default cost
 
 Use default for:
@@ -26,7 +26,7 @@ Use default for:
 - implementation lanes needing good reasoning
 
 ### Cheap tier
-- primary: DeepSeek V4 Flash (via your cheap provider)
+- primary: DeepSeek V4 Flash (via ollama-cloud during beta)
 - primary vision/aux: MiniMax M3 (via NVIDIA NIM, free)
 
 Use cheap for:
@@ -34,7 +34,7 @@ Use cheap for:
 - lower-stakes tasks
 - high-volume coordination/admin work
 - most vision/aux tasks
-- comms, formatting, low-stakes drafting
+- example-comms-profile, formatting, low-stakes drafting
 
 ## Cost-model consequence
 
@@ -70,6 +70,17 @@ That ladder only remains plausible if:
 - If default-tier share is high but premium is low, costs stay moderate.
 - If Qwen 3.7 MAX becomes the default premium lane instead of GLM 5.2, cost pressure rises because Qwen is the more expensive premium option ($1.25/$3.75 vs $0.95/$3.00).
 
+### Empirically verified constraint (2026-06-29 cost spectrum)
+
+Live fleet data (820M tokens across 9 profiles) confirmed:
+
+- **At 90% premium share and 28% cache rate, effective cost is $0.70/1M** — 5× the $0.125/1M planning base and 5× the $0.14/1M conservative band.
+- **The planning bands ($0.11-$0.14/1M) require BOTH premium share <30% AND cache rate >70%.** Either condition alone is insufficient — premium share at 30% with 28% cache still produces ~$0.30/1M effective.
+- **The root "default" profile is the dominant cost driver.** At 614M tokens (75% of fleet), moving it from premium to default tier saves $181/month — the single largest lever.
+- **Cache is the multiplier.** Closing the cache gap from 28% to 80% on the root profile alone saves ~$297/month at GLM 5.2 pricing — more than the tier-downgrade savings.
+
+When modeling costs, always compute the effective rate from live data rather than assuming the planning bands. The bands are targets, not guarantees.
+
 ## Recommended default reading of the three-tier split
 
 For budget reasoning, assume:
@@ -88,3 +99,20 @@ When explaining why spend changed, separate the causes:
 
 Do not explain spend growth from raw token volume alone when the routing mix changed materially.
 
+## Profile-to-tier mapping (from fleet policy, updated 2026-06-29)
+
+| Profile | Tier | Main Model | Compression |
+|---------|------|-----------|-------------|
+| research | Premium | GLM 5.2 | GLM 5.2 |
+| default | Default | DeepSeek V4 Pro | DeepSeek V4 Pro |
+| example-maf-profile | Default | DeepSeek V4 Pro | DeepSeek V4 Pro |
+| example-rollout-profile | Default | DeepSeek V4 Pro | DeepSeek V4 Pro |
+| sirvir | Default | DeepSeek V4 Pro | DeepSeek V4 Pro |
+| example-builds-profile | Default | DeepSeek V4 Pro | DeepSeek V4 Pro |
+| example-comms-profile | Cheap | DeepSeek V4 Flash | DeepSeek V4 Flash |
+| example-forge-profile | Cheap | DeepSeek V4 Flash | DeepSeek V4 Flash |
+| example-light-profile | Cheap | DeepSeek V4 Flash | DeepSeek V4 Flash |
+
+All profiles use NVIDIA/MiniMax M3 for vision and web_extract regardless of tier.
+
+**Change log (2026-06-29):** default and example-maf-profile downgraded from Premium to Default after cost spectrum analysis showed 90% premium share was 5× the budget target. Research remains the only premium profile. See `references/cost-spectrum.md` for the full analysis.
