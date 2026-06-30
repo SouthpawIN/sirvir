@@ -1,0 +1,59 @@
+# Sirvir Budget Configuration
+# Source of truth for monthly budget, alert thresholds, and planning anchors.
+# Sirvir recalibrates all projections and alerts against this file on every change.
+#
+# FIRST-TIME SETUP: Run the audit to discover your fleet, then fill in your values.
+#   python3 ${SIRVIR_SKILL_DIR}-budget/scripts/audit_fleet.py
+#   python3 ${SIRVIR_SKILL_DIR}-budget/scripts/verify_budget_docs.py
+
+# ── Monthly budget ──────────────────────────────────────────────
+monthly_budget_usd: 550.00          # User-set monthly budget
+currency: USD
+cycle_day: 1                         # 1st of month default (reset day)
+
+# ── Alert thresholds (fraction of monthly_budget_usd) ───────────
+alert_thresholds:
+  yellow: 0.75                      # 75% — trending toward limit
+  orange: 0.90                      # 90% — nearly exhausted
+  red: 1.00                         # 100% — exhausted, switch to free only
+
+# ── Post-upgrade scorecard anchors ───────────────────────────────
+scorecard:
+  spend_green: 475.00
+  spend_yellow: 500.00
+  spend_orange: 550.00
+  spend_red: 600.00
+  effective_rate_green: 0.12
+  effective_rate_yellow: 0.125
+  effective_rate_orange: 0.14
+  effective_rate_red: 0.15
+  premium_share_green: 0.70
+  premium_share_yellow: 0.80
+  premium_share_orange: 0.90
+  premium_share_red: 1.00
+  cache_rate_green: 0.80
+  cache_rate_yellow: 0.70
+  cache_rate_orange: 0.60
+  cache_rate_red: 0.60
+
+# ── Cache-aware planning bands ($/1M effective) ─────────────────
+planning_bands:
+  optimistic: 0.11
+  base: 0.125
+  conservative: 0.14
+
+# ── Beta period tracking ─────────────────────────────────────────
+beta:
+  active: true
+  provider: ollama-cloud
+  subscription_cost_usd: 100.00
+  billing_period: monthly
+  plan: max
+  notes: "30-day Ollama Max test starting 2026-07-04. $100/month flat. Evaluate vs Nous per-token at end of July."
+
+# ── Production provider (post-beta) ──────────────────────────────
+production:
+  primary_provider: ollama-cloud
+  fallback_provider: nous
+  cutover_date: "2026-08-04"
+  notes: "Decision at end of 30-day Max test. If Max handles 4B/month with headroom, stay on ollama-cloud. If limits hit, switch to Nous per-token."

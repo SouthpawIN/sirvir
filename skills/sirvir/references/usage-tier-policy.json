@@ -1,0 +1,98 @@
+{
+  "version": 2,
+  "updated_at": "2026-06-30",
+  "classification": {
+    "windows": {
+      "30d": 30,
+      "7d": 7,
+      "24h": 1
+    },
+    "weights": {
+      "30d": 0.6,
+      "7d": 0.3,
+      "24h": 0.1
+    },
+    "conservative_rounding": true,
+    "long_term_truth_wins": true,
+    "ask_followup_on_incomplete_evidence": true,
+    "default_tier_on_insufficient_evidence": "heavy",
+    "minimum_confident_sessions_30d": 3,
+    "outlier_handling": {
+      "enabled": true,
+      "spike_ratio_vs_30d_daily_average": 3.0,
+      "min_24h_tokens": 1000000,
+      "max_24h_tier_lift_above_30d": 1
+    },
+    "profile_thresholds": {
+      "monthly_equivalent_tokens": {
+        "light_max": 2000000,
+        "moderate_max": 25000000,
+        "heavy_max": 150000000
+      },
+      "monthly_equivalent_sessions": {
+        "light_max": 40,
+        "moderate_max": 250,
+        "heavy_max": 1000
+      },
+      "average_tokens_per_session": {
+        "light_max": 50000,
+        "moderate_max": 200000,
+        "heavy_max": 600000
+      }
+    },
+    "fleet_thresholds": {
+      "monthly_equivalent_tokens": {
+        "light_max": 5000000,
+        "moderate_max": 50000000,
+        "heavy_max": 250000000
+      },
+      "monthly_equivalent_sessions": {
+        "light_max": 80,
+        "moderate_max": 500,
+        "heavy_max": 2000
+      },
+      "active_profiles_30d": {
+        "light_max": 1,
+        "moderate_max": 3,
+        "heavy_max": 6
+      }
+    },
+    "corp_escalators": {
+      "min_active_profiles_30d": 4,
+      "min_monthly_equivalent_tokens": 100000000,
+      "max_single_profile_share_for_corp": 0.85
+    }
+  },
+  "provider_policy": {
+    "governing_tier_rule": "fleet_wins_by_default",
+    "nvidia": {
+      "allowed_tiers": [
+        "light"
+      ],
+      "moderate_exception_requires_explicit_low_risk_override": true,
+      "label": "light-use-or-experimental-only"
+    },
+    "recommendation_lanes": [
+      "best",
+      "cheaper",
+      "safest"
+    ]
+  },
+  "overrides": {
+    "state_path": "${SIRVIR_SKILL_DIR}/references/usage-tier-overrides.json",
+    "allow_temporary_overrides": true,
+    "required_fields": [
+      "scope",
+      "target",
+      "reason",
+      "start_at",
+      "expires_at",
+      "baseline_tier",
+      "override_tier"
+    ],
+    "automatic_reversion": true
+  },
+  "provider_snapshots": {
+    "state_path": "${SIRVIR_SKILL_DIR}/references/usage-tier-provider-snapshots.json"
+  }
+}
