@@ -127,12 +127,18 @@ def load_policy() -> dict[str, Any]:
     return json.loads(policy_path().read_text())
 
 
+def resolve_policy_state_path(path_value: str) -> Path:
+    skill_dir = DEFAULT_POLICY_PATH.parent.parent
+    expanded = (path_value or "").replace("${SIRVIR_SKILL_DIR}", str(skill_dir)).replace("${HERMES_HOME}", str(BASE_DIR))
+    return Path(os.path.expandvars(expanded))
+
+
 def load_provider_snapshots(policy: dict[str, Any]) -> dict[str, Any]:
     snapshot_cfg = policy.get("provider_snapshots", {})
     path_value = snapshot_cfg.get("state_path")
     if not path_value:
         return {}
-    snapshot_path = Path(path_value)
+    snapshot_path = resolve_policy_state_path(path_value)
     if not snapshot_path.exists():
         return {}
     try:
@@ -259,6 +265,8 @@ def load_yaml(path: Path) -> dict[str, Any]:
             i += 1
         return container, i
 
+    if not lines:
+        return {}
     parsed, _ = parse_block(0, line_indent(0))
     return parsed if isinstance(parsed, dict) else {}
 
@@ -593,7 +601,7 @@ def build_fleet_usage(policy: dict[str, Any], now_ts: float, snapshots: dict[str
 
 
 def load_overrides(policy: dict[str, Any]) -> list[dict[str, Any]]:
-    override_path = Path(policy["overrides"]["state_path"])
+    override_path = resolve_policy_state_path(policy["overrides"]["state_path"])
     if not override_path.exists():
         return []
     try:
@@ -868,7 +876,7 @@ def select_model(task_type: str, priority: str = "balanced", prompt: str | None 
             {"model": s["model"], "provider": s["provider"], "score": s["weighted_score"]}
             for s in scored[1:4]
         ],
-        "benchmark_age": benchmark_data["generated_at"] if benchmark_data else "no benchmark data",
+        "benchmark_age": benchmark_data.get("generated_at", "no benchmark data") if benchmark_data else "no benchmark data",
         "current_main_provider": profile_usage["current_main_provider"],
         "current_main_model": profile_usage["current_main_model"],
         "current_main_lane": profile_usage["current_main_lane"],
@@ -886,7 +894,7 @@ def select_model(task_type: str, priority: str = "balanced", prompt: str | None 
 def list_routing_table(profile: str) -> None:
     benchmark_data = load_benchmark()
     print("Model Routing Table")
-    print(f"Benchmark: {benchmark_data['generated_at'] if benchmark_data else 'NONE — using baselines'}")
+    print(f"Benchmark: {benchmark_data.get('generated_at', 'NONE — using baselines') if benchmark_data else 'NONE — using baselines'}")
     print(f"Profile: {profile}")
     print(f"Generated: {datetime.now(timezone.utc).isoformat()}")
     print()

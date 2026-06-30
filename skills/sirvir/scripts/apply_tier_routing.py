@@ -3,7 +3,7 @@
 Apply fleet tier routing to all profile config.yaml files.
 
 Usage:
-    python3 apply_tier_routing.py [--dry-run] [--provider ollama-cloud|nous]
+    python3 apply_tier_routing.py [--apply] [--provider ollama-cloud|nous]
 
 Defaults to ollama-cloud (Max test provider). Use --provider nous for fallback.
 
@@ -13,9 +13,18 @@ Reads the tier assignments from TIERS below and patches:
 
 Does NOT touch: fallback_providers, compression settings, kanban, prompt_caching, etc.
 """
-import yaml
-from pathlib import Path
 import argparse
+import os
+from pathlib import Path
+
+try:
+    import yaml
+except ModuleNotFoundError:  # pragma: no cover - depends on runtime environment
+    yaml = None
+
+HERMES_HOME = Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data")))
+PROFILE_ROOT = HERMES_HOME / "profiles"
+ROOT_CONFIG = HERMES_HOME / "config.yaml"
 
 # ── Tier assignments ──────────────────────────────────────────────────
 TIERS = {
@@ -40,15 +49,15 @@ VISION_PROVIDER = "nvidia"
 VISION_MODEL = "minimaxai/minimax-m3"
 
 CONFIG_PATHS = {
-    "default":      Path("${HERMES_CONFIG}"),
-    "example-maf-profile":          Path("${HERMES_PROFILE_DIR}/example-maf-profile/config.yaml"),
-    "research":     Path("${HERMES_PROFILE_DIR}/research/config.yaml"),
-    "example-rollout-profile": Path(str(Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "profiles" / "example-rollout-profile/config.yaml"),
-    "sirvir":       Path("${HERMES_PROFILE_DIR}/config.yaml"),
-    "example-builds-profile": Path(str(Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "profiles" / "example-builds-profile/config.yaml"),
-    "example-comms-profile":        Path("${HERMES_PROFILE_DIR}/example-comms-profile/config.yaml"),
-    "example-forge-profile":  Path(str(Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "profiles" / "example-forge-profile/config.yaml"),
-    "example-light-profile":     Path("${HERMES_PROFILE_DIR}/example-light-profile/config.yaml"),
+    "default": ROOT_CONFIG,
+    "example-maf-profile": PROFILE_ROOT / "example-maf-profile" / "config.yaml",
+    "research": PROFILE_ROOT / "research" / "config.yaml",
+    "example-rollout-profile": PROFILE_ROOT / "example-rollout-profile" / "config.yaml",
+    "sirvir": PROFILE_ROOT / "sirvir" / "config.yaml",
+    "example-builds-profile": PROFILE_ROOT / "example-builds-profile" / "config.yaml",
+    "example-comms-profile": PROFILE_ROOT / "example-comms-profile" / "config.yaml",
+    "example-forge-profile": PROFILE_ROOT / "example-forge-profile" / "config.yaml",
+    "example-light-profile": PROFILE_ROOT / "example-light-profile" / "config.yaml",
 }
 
 
@@ -61,8 +70,12 @@ def apply_tier_routing(provider="ollama-cloud", dry_run=False):
             changes_log.append(f"SKIP {profile_name}: config not found at {config_path}")
             continue
         
+        if yaml is None:
+            changes_log.append(f"SKIP {profile_name}: PyYAML is required to read {config_path}")
+            continue
+
         with open(config_path) as f:
-            config = yaml.safe_load(f)
+            config = yaml.safe_load(f) or {}
         
         main_model = MAIN_PER_TIER[tier]
         changes = []
@@ -144,8 +157,13 @@ def verify():
             all_ok = False
             continue
         
+        if yaml is None:
+            print(f"{name:<14} {tier:<8} {'PYYAML_MISSING':<22} {'':<30} {'':<22} FAIL")
+            all_ok = False
+            continue
+
         with open(config_path) as f:
-            cfg = yaml.safe_load(f)
+            cfg = yaml.safe_load(f) or {}
         
         m = cfg.get("model", {})
         aux = cfg.get("auxiliary", {})
@@ -181,7 +199,8 @@ def verify():
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Apply fleet tier routing to all profiles")
-    parser.add_argument("--dry-run", action="store_true", help="Show changes without writing")
+    parser.add_argument("--apply", action="store_true", help="Write the proposed routing changes. Default is dry-run.")
+    parser.add_argument("--dry-run", action="store_true", help="Show changes without writing (default)")
     parser.add_argument("--provider", default="ollama-cloud", choices=["ollama-cloud", "nous"], 
                         help="Text-lane provider (beta: ollama-cloud, post-beta: nous)")
     parser.add_argument("--verify", action="store_true", help="Verify configs only, no changes")
@@ -190,7 +209,8 @@ if __name__ == "__main__":
     if args.verify:
         verify()
     else:
-        result = apply_tier_routing(provider=args.provider, dry_run=args.dry_run)
+        dry_run = not args.apply or args.dry_run
+        result = apply_tier_routing(provider=args.provider, dry_run=dry_run)
         print(result)
         print("\n--- Verification ---")
         verify()

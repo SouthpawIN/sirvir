@@ -32,7 +32,7 @@ PROFILE_ROOT = BASE_DIR / "profiles"
 ROOT_PROFILE = "default"
 ROOT_CONFIG = BASE_DIR / "config.yaml"
 ROOT_STATE_DB = BASE_DIR / "state.db"
-DEFAULT_POLICY_PATH = Path(__file__).resolve().parent.parent / "references" / "usage-tier-policy.json"
+DEFAULT_POLICY_PATH = Path(__file__).resolve().parent.parent.parent / "sirvir" / "references" / "usage-tier-policy.json"
 
 WINDOW_DAYS = {"24h": 1, "7d": 7, "30d": 30}
 TIER_ORDER = ["light", "moderate", "heavy", "corp"]
@@ -60,12 +60,18 @@ def load_policy() -> dict[str, Any]:
     return json.loads(policy_path().read_text())
 
 
+def resolve_policy_state_path(path_value: str) -> Path:
+    skill_dir = DEFAULT_POLICY_PATH.parent.parent
+    expanded = (path_value or "").replace("${SIRVIR_SKILL_DIR}", str(skill_dir)).replace("${HERMES_HOME}", str(BASE_DIR))
+    return Path(os.path.expandvars(expanded))
+
+
 def load_provider_snapshots(policy: dict[str, Any]) -> dict[str, Any]:
     snapshot_cfg = policy.get("provider_snapshots", {})
     path_value = snapshot_cfg.get("state_path")
     if not path_value:
         return {}
-    snapshot_path = Path(path_value)
+    snapshot_path = resolve_policy_state_path(path_value)
     if not snapshot_path.exists():
         return {}
     try:
@@ -192,6 +198,8 @@ def load_yaml(path: Path) -> dict[str, Any]:
             i += 1
         return container, i
 
+    if not lines:
+        return {}
     parsed, _ = parse_block(0, line_indent(0))
     return parsed if isinstance(parsed, dict) else {}
 

@@ -10,12 +10,20 @@ import tempfile
 from datetime import datetime, timezone
 from pathlib import Path
 
-BASE = Path("${SIRVIR_SKILL_DIR}")
+BASE = Path(__file__).resolve().parent.parent
 MODEL_ROUTER_PATH = BASE / "scripts" / "model_router.py"
-AUDIT_FLEET_PATH = Path("${SIRVIR_SKILL_DIR}-budget/scripts/audit_fleet.py")
+AUDIT_FLEET_PATH = BASE.parent / "sirvir-budget" / "scripts" / "audit_fleet.py"
 POLICY_PATH = BASE / "references" / "usage-tier-policy.json"
 EXAMPLES_PATH = BASE / "references" / "usage-tier-examples.json"
-ROOT_CONFIG_PATH = Path("${HERMES_CONFIG}")
+VALIDATION_HOME = Path(tempfile.mkdtemp(prefix="sirvir-usage-tier-home-"))
+ROOT_CONFIG_PATH = VALIDATION_HOME / "config.yaml"
+ROOT_CONFIG_PATH.write_text(
+    "fallback_providers:\n"
+    "  - provider: openai-codex\n"
+    "    model: gpt-5.4\n"
+    "toolsets:\n"
+    "  - hermes-cli\n"
+)
 
 
 def load_module(name: str, path: Path):
@@ -48,7 +56,10 @@ def assert_true(name: str, condition: bool, failures: list[str], detail: str) ->
 
 
 def invoke_python_json(args: list[str], env: dict[str, str] | None = None, expect_exit: int = 0) -> dict:
-    proc = subprocess.run(args, capture_output=True, text=True, env=env)
+    child_env = {**os.environ, "HERMES_HOME": str(VALIDATION_HOME)}
+    if env:
+        child_env.update(env)
+    proc = subprocess.run(args, capture_output=True, text=True, env=child_env)
     if proc.returncode != expect_exit:
         raise RuntimeError(
             f"command {' '.join(args)} exited {proc.returncode}, expected {expect_exit}. stdout={proc.stdout!r} stderr={proc.stderr!r}"
@@ -290,6 +301,7 @@ def run_snapshot_check(failures: list[str]) -> None:
     with tempfile.TemporaryDirectory(prefix="usage-tier-snapshot-") as tmp:
         tmpdir = Path(tmp)
         policy = json.loads(POLICY_PATH.read_text())
+        policy["classification"]["default_tier_on_insufficient_evidence"] = "light"
         snapshots_path = tmpdir / "snapshots.json"
         snapshots_path.write_text(json.dumps({
             "profiles": {"example-light-profile": {"minimum_tier": "moderate", "reason": "dashboard shows sustained provider saturation"}},

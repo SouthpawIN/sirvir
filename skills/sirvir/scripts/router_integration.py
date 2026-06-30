@@ -19,17 +19,19 @@ Output modes:
 import json
 import sys
 import argparse
+import os
 import subprocess
 from pathlib import Path
 
 # Import the router
-sys.path.insert(0, str(Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data"))) / "home"))
+HERMES_HOME = Path(os.environ.get("HERMES_HOME", str(Path.home() / ".hermes" / "data")))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from model_router import select_model, detect_task_type, load_benchmark
 
 
 def get_current_model():
     """Read current model from Hermes config."""
-    config_path = Path("${HERMES_CONFIG}")
+    config_path = HERMES_HOME / "config.yaml"
     if not config_path.exists():
         return None, None
     try:
@@ -62,6 +64,8 @@ def main():
                         default="balanced", help="Optimization priority")
     parser.add_argument("--prompt", help="Prompt text (required for --task auto)")
     parser.add_argument("--high-stakes", action="store_true", help="Prefer reliability over cost")
+    parser.add_argument("--profile", default="sirvir", help="Profile to classify and route for")
+    parser.add_argument("--allow-conservative-fallback", action="store_true", help="Use conservative fallback when evidence is incomplete")
     parser.add_argument("--hermes-cmd", action="store_true", help="Output /model slash command")
     parser.add_argument("--config", action="store_true", help="Output hermes config set command")
     parser.add_argument("--json", action="store_true", help="Output JSON")
@@ -72,7 +76,7 @@ def main():
         parser.error("--task required")
 
     model, details = select_model(
-        args.task, args.priority, args.prompt, args.high_stakes
+        args.task, args.priority, args.prompt, args.high_stakes, args.profile, args.allow_conservative_fallback
     )
 
     if model is None:
