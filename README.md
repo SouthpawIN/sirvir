@@ -21,7 +21,7 @@
 
 ## What Sirvir Does
 
-Sirvir is the **infrastructure owner** for your model fleet. He doesn't just serve models — he actively manages their entire lifecycle:
+Sirvir is your **customer service & maintainence agent** for [TurboFit](http://github.com/SouthpawIN/turbofit). Use Sirvir to install, configure, and help improve TurboFit:
 
 | Responsibility | What It Means |
 |---------------|---------------|
@@ -29,8 +29,8 @@ Sirvir is the **infrastructure owner** for your model fleet. He doesn't just ser
 | **External app endpoints** | Spins up OpenAI-compatible endpoints for ANY app, not just Hermes |
 | **HuggingFace scanning** | Continuously scans for new GGUF models matching your archetypes |
 | **Creator quality tracking** | Maintains a database of model creators and their track records |
-| **API model benchmarks** | Competitive intelligence on all monitored API models (local vs API) |
-| **Auto-backend optimization** | Tests llama.cpp / vLLM / Ollama / SGlang per model, finds the fastest |
+| **Writes PRs for TurboFit** | If Sirvir finds a blind spot in TurboFit, it will write a PR and send it to http://github.com/SouthpawIN/tuebofit |
+| **Auto-backend optimization** | best possible local model that adapts to memory preasure |
 | **Token budget monitoring** | Tracks real spend from Hermes state.db against a monthly budget |
 | **Model suggestions** | Recommends models based on hardware, use case, and budget |
 | **Consolidated logging** | All activities stream to Discord, blog, and GitHub simultaneously |
