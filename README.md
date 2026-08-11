@@ -15,10 +15,7 @@
 - [Quick Start](#quick-start)
 - [When to Use Sirvir](#when-to-use-sirvir)
 - [Commands](#commands)
-- [Sub-Skills](#sub-skills)
-- [Optimization Priority](#optimization-priority)
-- [Hardware Tiers](#hardware-tiers)
-- [Profile Image](#profile-image)
+- [Skills](#skills)
 
 ---
 
@@ -234,12 +231,6 @@ serve bench <alias>                   # Run lm-eval-harness (MMLU, GPQA, etc.)
 serve bench compare_27b               # Head-to-head comparison
 ```
 
-### API Fallback (NVIDIA NIM — free)
-```bash
-serve api list                        # Show curated free NIM models
-serve api use <rank|api_id> [main|aux] # Wire a NIM model into config
-```
-
 ### Hermes Config Wiring
 ```bash
 serve main <alias> [--ui tui|dashboard|gateway|desktop|herm]
@@ -266,7 +257,7 @@ bash scripts/sync-github.sh           # Sync to GitHub
 
 ---
 
-## Sub-Skills
+## Skills
 
 Sirvir ships with 5 focused sub-skills alongside the turbofit core:
 
@@ -281,42 +272,6 @@ Sirvir ships with 5 focused sub-skills alongside the turbofit core:
 
 ---
 
----
-
-## Optimization Priority
-
-When optimizing any local model, Sirvir follows this priority **strictly**:
-
-1. **262K context length** — minimum viable for productive use
-2. **30 tok/s** — minimum viable speed for interactive use
-3. **1M context length** — stretch goal
-4. **As fast as possible** — maximize speed once all thresholds are met
-
-Never trade context for speed unless 262K is achieved. Never trade 30 tok/s for more context unless 30 tok/s is achieved.
-
-**The ladder: `262K → 30 tok/s → 1M → max speed`**
-
----
-
-## Hardware Tiers
-
-Sirvir auto-detects your hardware tier via `nvidia-smi` and pulls model suggestions from the live benchmark catalog — no hardcoded model names:
-
-| Tier | VRAM | Setup | Strategy |
-|------|------|-------|----------|
-| **Beefy** | ≥24GB | Local main + local aux | Best S-tier models from benchmark catalog |
-| **Modest** | 8-24GB | API main + free/cheap aux | Best API models + free NIM aux |
-| **Thin** | <8GB or no GPU | API main + API aux | Best free NIM models for both positions |
-
-No NVIDIA GPU → defaults to Thin (API-only, zero cost). Suggested models come from the live benchmark catalog at runtime — ask Sirvir "what should I run?" for specific recommendations.
-
----
-
-## Profile Image
-
-The Sirvir profile image was generated following the [Nous Research Style Guide](https://github.com/SouthpawIN/nous-style-guide) — strict monochrome (pure black #000000 + white #FFFFFF), retro manga 70s shoujo style, bold line art, screentone halftone shading, industrial typewriter aesthetic, Swiss grid layout.
-
-The character is a focused engineer with over-ear headphones featuring a circuit-board headband, surrounded by GPU monitoring displays and VRAM gauge dials. The "262K" and "30 tok/s" labels reference the optimization priority ladder.
 
 ---
 
