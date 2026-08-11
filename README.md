@@ -16,11 +16,8 @@
 - [Install](#install)
 - [Quick Start](#quick-start)
 - [When to Use Sirvir](#when-to-use-sirvir)
-- [Example Prompts](#example-prompts)
 - [Commands](#commands)
 - [Sub-Skills](#sub-skills)
-- [Cron Jobs](#cron-jobs)
-- [Interactions with Other Agents](#interactions-with-other-agents)
 - [Optimization Priority](#optimization-priority)
 - [Hardware Tiers](#hardware-tiers)
 - [Profile Image](#profile-image)
@@ -112,7 +109,6 @@ hermes -p sirvir
 - **"Set up my local LLM"** — auto-detect GPU, pick best model, launch, wire Hermes
 - **"Launch a model"** — serve any GGUF from your catalog
 - **"What model should I run?"** — get a recommendation based on hardware + budget
-- **"My GPU is busy, scale down"** — walk the VRAM scaling ladder
 - **"I need vision"** — find and verify the correct mmproj for any model
 - **"Serve me a model for [app]"** — get an OpenAI-compatible endpoint for any application
 - **"How much have I spent?"** — track token usage against your monthly budget
@@ -121,23 +117,6 @@ hermes -p sirvir
 - **"Swap main" / "Swap aux"** — change the fleet's serving configuration
 - **"Stop everything"** — kill all running servers
 ---
-
-## Example Prompts
-
-### Model Setup
-```
-> Serve auto main
-  → Detects GPU, picks best local model, launches, wires Hermes config
-
-> Serve auto main --api --free
-  → Forces free API mode (DeepSeek V4 Pro via NVIDIA NIM, no GPU needed)
-
-> Serve auto aux --vision
-  → Pick best vision-capable aux model
-
-> Serve auto main --ui tui
-  → Launch + start Hermes TUI
-```
 
 ### Model Suggestions
 ```
@@ -303,43 +282,6 @@ Sirvir ships with 5 focused sub-skills alongside the turbofit core:
 | **sirvir-budget** | Token usage monitoring, monthly budget, alert thresholds, upgrade suggestions |
 
 ---
-
-## Cron Jobs
-
-Sirvir runs autonomously on a schedule:
-
-| Schedule | Job | Delivers To |
-|----------|-----|------------|
-| **Daily 6:00 AM** | HuggingFace scan + OpenRouter pricing + model DB update + GitHub sync | Discord |
-| **Daily 6:30 AM** | Token budget tracking + spend analysis + upgrade suggestions | Discord |
-| **Every 4 hours** | VRAM probe + scaling check (downscale if pressure detected) | Discord (alerts only) |
-| **Hourly** | Endpoint health check (silent — only alerts if endpoint is down) | Discord (alerts only) |
-| **Sunday 2:00 AM** | Auto-benchmark main + aux models + API model competitive intel | Discord |
-
----
-
-## Interactions with Other Agents
-
-Sirvir is a model fleet manager — it can integrate with any Hermes agent fleet. Here's how it typically interacts:
-
-| Agent Role | Interaction |
-|------------|-------------|
-| **Orchestrator** | Sirvir reports infrastructure changes; the orchestrator routes model-related tasks to Sirvir |
-| **Worker agent** | Workers run tasks on models Sirvir manages; Sirvir provides VRAM alerts when builds consume GPU |
-| **Profile editor** | When Sirvir changes a model endpoint, the profile editor ensures all fleet configs are updated |
-| **Support agent** | Support agents handle user-facing questions; Sirvir provides technical details |
-| **Brainstormer** | Idea-generation agents propose; Sirvir evaluates whether available models can handle them |
-
-### Example fleet interaction:
-
-```
-User: "Set up a local coding model"
-  → Orchestrator routes to Sirvir
-  → Sirvir: "serve auto main --vision"
-  → Sirvir detects GPU, picks best model from benchmark catalog, launches
-  → Sirvir notifies fleet: "Main model changed to [model-name]"
-  → Fleet continues with new model
-```
 
 ---
 
