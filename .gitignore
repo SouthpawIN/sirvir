@@ -27,6 +27,8 @@ workspace/
 home/
 
 # Caches & generated artifacts
+__pycache__/
+*.py[cod]
 image_cache/
 audio_cache/
 document_cache/

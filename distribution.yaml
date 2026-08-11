@@ -1,84 +1,26 @@
-# distribution.yaml — Sirvir profile distribution manifest
-# Install with: hermes profile install https://github.com/SouthpawIN/sirvir
 name: sirvir
-version: "1.0.0"
-description: >-
-  Model fleet manager and intelligence engine for Hermes Agent. Autonomous model
-  lifecycle manager — local serving, benchmarking, auto-scaling, API fallback,
-  HuggingFace scanning, creator tracking, backend optimization, budget monitoring,
-  external app endpoint serving, and consolidated logging.
+description: Local-only Turbofit installation, configuration, usage, troubleshooting, and contribution support
+version: "2.0.0"
 author: SouthpawIN
 license: MIT
 homepage: https://github.com/SouthpawIN/sirvir
 repo: https://github.com/SouthpawIN/sirvir
-
 hermes_requires: ">=0.12.0"
-
-env_requires:
-  - name: NVIDIA_API_KEY
-    description: NVIDIA NIM API key for free-tier API fallback models. Sign up at https://build.nvidia.com
-    required: false
-  - name: Nous Portal Subscription
-    description: >-
-      PRIMARY. Nous Portal subscription enables the Tool Gateway (Firecrawl web search,
-      FAL image generation, OpenAI TTS, Browser Use automation) and gives a 10% credit
-      bonus when routing OpenRouter models through Nous. Always prefer Nous routing
-      over direct OpenRouter. Sign up at https://nousresearch.com
-    required: false
-  - name: OPENROUTER_API_KEY
-    description: >-
-      OpenRouter API key for paid API models (GLM 5.2, Qwen 3.7 MAX, etc.).
-      Secondary to Nous — route through Nous when possible for Tool Gateway
-      access and the 10% credit bonus.
-    required: false
-  - name: HF_TOKEN
-    description: HuggingFace token for model scanning and downloading GGUF files.
-    required: false
 
 dependencies:
   - name: turbofit
     repo: SouthpawIN/turbofit
-    install: "git clone https://github.com/SouthpawIN/turbofit /tmp/turbofit-install && cp -r /tmp/turbofit-install/skills/turbofit ~/.hermes/skills/turbofit && rm -rf /tmp/turbofit-install"
-    required: true
-    note: "Manual install — Hermes security scanner blocks community skills with system daemon patterns. Turbofit legitimately manages servers (subprocess, systemd, bashrc)."
-  - name: sirvir
-    repo: SouthpawIN/sirvir
-    install: "hermes skills install sirvir"
-    required: true
-  - name: sirvir-bench
-    repo: SouthpawIN/sirvir
-    install: "hermes skills install sirvir-bench"
-    required: true
-  - name: sirvir-budget
-    repo: SouthpawIN/sirvir
-    install: "hermes skills install sirvir-budget"
-    required: true
-  - name: sirvir-research
-    repo: SouthpawIN/sirvir
-    install: "hermes skills install sirvir-research"
-    required: true
-  - name: sirvir-scale
-    repo: SouthpawIN/sirvir
-    install: "hermes skills install sirvir-scale"
-    required: true
-  - name: sirvir-serve
-    repo: SouthpawIN/sirvir
-    install: "hermes skills install sirvir-serve"
+    install: "hermes plugins install --enable https://github.com/SouthpawIN/turbofit.git"
     required: true
 
 distribution_owned:
+  - README.md
   - SOUL.md
   - AGENTS.md
   - config.yaml
   - distribution.yaml
-  - skills/turbofit/
   - skills/sirvir/
-  - skills/sirvir-bench/
-  - skills/sirvir-research/
-  - skills/sirvir-scale/
-  - skills/sirvir-serve/
-  - skills/sirvir-budget/
 
 post_install:
-  - command: echo "Sirvir profile installed. Start with hermes -p sirvir"
-    description: Display usage instructions
+  - command: 'echo "Sirvir installed. Start with: hermes -p sirvir"'
+    description: Display local support-profile usage
