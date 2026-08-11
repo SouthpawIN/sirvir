@@ -86,26 +86,13 @@ Update later with:
 hermes profile update sirvir
 ```
 
-### Optional Environment Variables
-
-| Variable | Where to Get It | What It Enables |
-|----------|----------------|----------------|
-| `NVIDIA_API_KEY` | Free at [build.nvidia.com](https://build.nvidia.com) | Free API fallback (DeepSeek V4 Pro/Flash, MiniMax M3) |
-| Nous Portal Subscription | [nousresearch.com](https://nousresearch.com) | **Primary** — Tool Gateway (Firecrawl, FAL, OpenAI TTS, Browser Use) + 10% OpenRouter credit bonus when routing through Nous |
-| `OPENROUTER_API_KEY` | [openrouter.ai](https://openrouter.ai) | Paid API models (GLM 5.2, Qwen 3.7 MAX). Secondary to Nous — route through Nous when possible for Tool Gateway access + credit bonus |
-| `HF_TOKEN` | [huggingface.co/settings/tokens](https://huggingface.co/settings/tokens) | HuggingFace model scanning + downloading |
-
-Set these via `hermes setup` or in your `.env` file.
-
----
-
 ## Quick Start
 
 ```bash
 # Start Sirvir
 hermes -p sirvir
 
-# Then ask it anything:
+# Then ask it anything about turbofit and its services:
 ```
 
 ```
@@ -133,14 +120,6 @@ hermes -p sirvir
 - **"Scan HuggingFace"** — find new models, track creator quality
 - **"Swap main" / "Swap aux"** — change the fleet's serving configuration
 - **"Stop everything"** — kill all running servers
-
-### Don't use Sirvir for:
-
-- General coding or development tasks (use your default profile)
-- Community support or Discord questions (use a support agent)
-- Research deep-dives (use a research agent)
-- Profile editing (use a profile management agent)
-
 ---
 
 ## Example Prompts
