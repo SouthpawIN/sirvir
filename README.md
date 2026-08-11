@@ -4,8 +4,6 @@
 
 **Sirvir** is an autonomous Hermes Agent profile that manages your entire model layer — local serving, benchmarking, auto-scaling, API fallback, HuggingFace scanning, creator quality tracking, backend optimization, token budget monitoring, and external app endpoint serving.
 
-![Sirvir System Diagram](banner.png)
-
 > *TOWARDS SELF-IMPROVEMENT*
 
 ---
