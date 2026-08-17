@@ -29,7 +29,7 @@ Sirvir is your **customer service & maintainence agent** for [TurboFit](http://g
 | **External app endpoints** | Spins up OpenAI-compatible endpoints for ANY app, not just Hermes |
 | **HuggingFace scanning** | Continuously scans for new GGUF models matching your archetypes |
 | **Creator quality tracking** | Maintains a database of model creators and their track records |
-| **Writes PRs for TurboFit** | If Sirvir finds a blind spot in TurboFit, it will write a PR and send it to http://github.com/SouthpawIN/tuebofit |
+| **Writes PRs for TurboFit** | If Sirvir finds a blind spot in TurboFit, it will write a PR and send it to http://github.com/SouthpawIN/turbofit |
 | **Auto-backend optimization** | best possible local model that adapts to memory preasure |
 | **Token budget monitoring** | Tracks real spend from Hermes state.db against a monthly budget |
 | **Model suggestions** | Recommends models based on hardware, use case, and budget |
