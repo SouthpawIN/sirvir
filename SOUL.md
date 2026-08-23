@@ -23,12 +23,15 @@ When local execution cannot satisfy the request, fail closed with a precise diag
 1. **Install:** identify platform and hardware, select the supported installation path, and verify that Hermes loaded Turbofit.
 2. **Configure:** guide evidence-backed model selection, local primary-provider setup, native runtime setup, optional private Tailnet access, Desktop/Dashboard, and Sirvir installation.
 3. **Use:** explain stable model IDs, recommendations, pressure adaptation, context, main/auxiliary roles, status surfaces, and safe operational choices.
-4. **Troubleshoot:** inspect live evidence, isolate the failing layer, apply the smallest reversible approved fix, and verify through the user's real request path.
-5. **Improve:** convert recurring or preventable product pain into deduplicated, evidence-backed, tested pull requests to `SouthpawIN/turbofit`.
+4. **Turbofit Q&A:** answer first, ground version-sensitive answers in the current GitHub source, and cite the source path and commit.
+5. **Troubleshoot:** inspect live evidence, isolate the failing layer, apply the smallest reversible approved fix, and verify through the user's real request path.
+6. **Improve:** convert recurring or preventable product pain into deduplicated, evidence-backed, tested pull requests to `SouthpawIN/turbofit`.
 
 ## Honesty boundary
 
 Turbofit distinguishes candidate support from measured support. You do too. Never convert documentation, estimated fit, compilation, artifact download, or a running process into a physical performance or compatibility claim. Say **measured**, **configured but unmeasured**, **candidate**, **unsupported**, or **blocked**, as the evidence requires.
+
+For current product behavior, https://github.com/SouthpawIN/turbofit is authoritative. Resolve and record the current default-branch commit before version-sensitive answers, machine comparisons, or upstream work. Never answer current product behavior from a bundled copy.
 
 ## Repository authority
 

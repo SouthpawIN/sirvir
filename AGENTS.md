@@ -24,6 +24,19 @@ Use the newest source available:
 
 Prefer a Git checkout over an installed copy. Confirm commands against current source before executing them.
 
+## GitHub freshness gate
+
+Canonical product source: https://github.com/SouthpawIN/turbofit
+
+Before answering a question about current Turbofit behavior, recommending a configuration, starting an install, or preparing a contribution:
+
+1. Resolve the current default-branch commit from GitHub and record the commit SHA in the case notes or response.
+2. If a Turbofit checkout is available, compare its branch and HEAD with that GitHub revision. Fetch only when the user has authorized changing local repository refs.
+3. Read the relevant files at that revision—normally `README.md`, `SKILL.md`, `plugin.yaml`, `runtime-profiles/`, `references/`, `scripts/`, and tests.
+4. Cite the source path and commit for version-sensitive answers, commands, compatibility claims, and PR decisions.
+
+Never answer current product behavior from a bundled copy. The installed plugin or skill can explain local state, but GitHub's current default branch is the authority for what Turbofit supports today. If GitHub is unreachable, disclose the last verified revision and label freshness as blocked rather than guessing.
+
 ## Start every support case
 
 1. State the desired outcome in one sentence.
@@ -38,7 +51,23 @@ When direct inspection is impossible, request only the minimum redacted diagnost
 
 ## Installation support
 
-Establish OS/architecture, Hermes version and health, host RAM, storage, accelerator vendor, per-device memory, device count/topology, and whether the user wants Turbofit as Hermes' local primary provider. Do not infer hardware from a marketing name when physical inventory is available.
+Establish operating system, architecture, Hermes version and health, system RAM, available storage, accelerator vendor and backend, per-device memory, device count/topology, and whether the user wants Turbofit as Hermes' local primary provider. Do not infer hardware from a marketing name when physical inventory is available.
+
+## Compare Turbofit to this machine
+
+Build a physical inventory first, then compare it to the current GitHub revision's catalog, recipes, runtime features, hardware constraints, and evidence. Report each viable lane with one evidence state:
+
+- **measured** — current recipe and physical evidence match this exact hardware class;
+- **portable-fit / benchmark required** — physical memory and backend checks fit, but source-machine TPS or intelligence must not transfer to this box;
+- **candidate** — cataloged but missing a proven runtime, artifact, or current recipe;
+- **unsupported** — the current source has no compatible implementation;
+- **blocked** — a missing fact or broken prerequisite prevents a truthful decision.
+
+Separate immutable capacity from transient free memory. For dedicated hardware, account for safe host spill without violating per-device limits or OS headroom. For unified memory, count the pool once. Present the safest lane first, explain why it fits, list the exact install/configure action, and state what remains unmeasured.
+
+## Turbofit Q&A
+
+Answer first, then give the minimum supporting detail. For version-sensitive questions, cite the source path and commit. Distinguish product behavior from this machine's current state, and distinguish measured facts from portable-fit candidates, estimates, and hypotheses. If the question exposes a reusable gap, offer or begin the pull-request workflow instead of inventing a Sirvir-only workaround.
 
 Confirm the current repository's install command. The supported plugin path is currently:
 
@@ -75,6 +104,7 @@ If no recipe has current evidence for this machine, call it blocked, unsupported
 - `active:aux`: dedicated local auxiliary residency when present, otherwise Turbofit's documented local shared-main behavior.
 - **Auto selection:** physical hardware chooses a safe ceiling; transient pressure changes only the active rung.
 - **Exact selection:** only current-recipe, physically validated combinations are validated.
+- **Portable-fit selection:** a physically compatible manual lane labeled **benchmark required**; it never inherits source-machine TPS or intelligence and cannot become Auto until on-box promotion passes.
 - **Local fallback ladder:** dedicated local auxiliary → shared local main → smaller local context/model → minimum local floor → fail closed.
 - **Contraction/healing:** Turbofit yields resources under sustained pressure and recovers conservatively after sustained headroom.
 - **Private networking:** Tailscale Serve is private. Never use public Funnel as a convenience workaround.

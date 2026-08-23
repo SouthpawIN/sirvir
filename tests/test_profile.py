@@ -26,6 +26,10 @@ class SirvirProfileTests(unittest.TestCase):
     def test_distribution_is_single_product(self):
         manifest = yaml.safe_load((ROOT / "distribution.yaml").read_text())
         self.assertEqual(manifest["name"], "sirvir")
+        self.assertEqual(manifest["version"], "2.1.0")
+        skill_text = (ROOT / "skills" / "sirvir" / "SKILL.md").read_text()
+        skill_meta = yaml.safe_load(skill_text.split("---", 2)[1])
+        self.assertEqual(skill_meta["version"], "2.1.0")
         self.assertEqual([d["name"] for d in manifest["dependencies"]], ["turbofit"])
         self.assertEqual(manifest["dependencies"][0]["repo"], "SouthpawIN/turbofit")
         self.assertEqual(manifest["distribution_owned"], [
@@ -85,6 +89,60 @@ class SirvirProfileTests(unittest.TestCase):
         self.assertIn("direct-push", text)
         self.assertIn("merge", text)
         self.assertIn("release", text)
+
+    def test_turbofit_source_is_refreshed_from_github_before_product_answers(self):
+        text = "\n".join([
+            (ROOT / "README.md").read_text().lower(),
+            (ROOT / "AGENTS.md").read_text().lower(),
+            (ROOT / "skills" / "sirvir" / "SKILL.md").read_text().lower(),
+        ])
+        self.assertIn("https://github.com/southpawin/turbofit", text)
+        self.assertIn("current default-branch commit", text)
+        self.assertIn("record the commit sha", text)
+        self.assertIn("never answer current product behavior from a bundled copy", text)
+
+    def test_machine_comparison_contract_covers_physical_fit_and_evidence_states(self):
+        text = "\n".join([
+            (ROOT / "AGENTS.md").read_text().lower(),
+            (ROOT / "skills" / "sirvir" / "SKILL.md").read_text().lower(),
+        ])
+        for required in (
+            "operating system",
+            "architecture",
+            "system ram",
+            "available storage",
+            "accelerator vendor",
+            "per-device memory",
+            "topology",
+            "measured",
+            "portable-fit",
+            "benchmark required",
+            "unsupported",
+            "blocked",
+        ):
+            with self.subTest(required=required):
+                self.assertIn(required, text)
+
+    def test_turbofit_question_answer_mode_is_explicit(self):
+        text = "\n".join([
+            (ROOT / "README.md").read_text().lower(),
+            (ROOT / "SOUL.md").read_text().lower(),
+            (ROOT / "skills" / "sirvir" / "SKILL.md").read_text().lower(),
+        ])
+        self.assertIn("turbofit q&a", text)
+        self.assertIn("cite the source path and commit", text)
+        self.assertIn("answer first", text)
+
+    def test_pr_workflow_requires_tests_release_gate_and_ci_readback(self):
+        text = "\n".join([
+            (ROOT / "AGENTS.md").read_text().lower(),
+            (ROOT / "skills" / "sirvir" / "SKILL.md").read_text().lower(),
+        ])
+        self.assertIn("failing regression test", text)
+        self.assertIn("scripts/release-check", text)
+        self.assertIn("gh pr create", text)
+        self.assertIn("read back", text)
+        self.assertIn("ci", text)
 
 
 if __name__ == "__main__":

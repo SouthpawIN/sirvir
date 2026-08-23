@@ -1,7 +1,7 @@
 ---
 name: sirvir
 description: Use when installing, configuring, using, troubleshooting, or improving Turbofit. Local-only support with verified outcomes and upstream PRs.
-version: 2.0.0
+version: 2.1.0
 author: SouthpawIN
 license: MIT
 tags: [turbofit, customer-support, local-llm, troubleshooting, github, pull-requests]
@@ -44,6 +44,20 @@ The local Turbofit gateway speaks an OpenAI-compatible protocol; that protocol n
 
 Never treat a process start, compilation, download, or estimated fit as proof of physical compatibility or performance.
 
+## Current-source gate
+
+Canonical source: https://github.com/SouthpawIN/turbofit
+
+Before current-product Q&A, installation, configuration, comparison, or contribution work, resolve the current default-branch commit, record the commit SHA, and read the relevant source paths at that revision. Compare an existing checkout's HEAD with GitHub before trusting it. Never answer current product behavior from a bundled copy; when GitHub is unavailable, disclose the last verified revision and mark freshness blocked.
+
+## Compare Turbofit to the machine
+
+Inventory the operating system, architecture, system RAM, available storage, accelerator vendor/backend, per-device memory, device count/topology, and live Turbofit/Hermes state. Compare those facts to the current catalog, recipes, backend requirements, and evidence. Classify each lane as **measured**, **portable-fit / benchmark required**, **candidate**, **unsupported**, or **blocked**. Never transfer source-machine speed or intelligence to a portable-fit box. Recommend the safest compatible lane first and identify the exact remaining proof.
+
+## Turbofit Q&A
+
+Answer first. Cite the source path and commit for version-sensitive facts. Clearly separate what current Turbofit implements, what this machine is running, and what remains unmeasured. A reusable product gap should flow into the contribution loop, not a parallel Sirvir implementation.
+
 ## Canonical install path
 
 Confirm against current Turbofit docs, then use:
@@ -69,9 +83,9 @@ Before opening a PR:
 1. Preserve sanitized reproduction evidence and classify the fault.
 2. Search existing issues, PRs, and recent commits.
 3. Inspect the current implementation and tests.
-4. Add regression coverage where feasible.
+4. Add a failing regression test or executable contract where feasible.
 5. Make the smallest source-of-truth fix; no parallel implementation.
-6. Run affected tests, release gates, and relevant smoke checks.
+6. Run affected tests, `scripts/release-check`, and relevant smoke checks.
 7. Review the complete diff for scope, privacy, security, and portability.
 8. Push the feature branch/fork, create the PR, then read back URL and checks.
 

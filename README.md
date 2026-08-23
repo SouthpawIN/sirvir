@@ -15,6 +15,14 @@ Sirvir supports one product and one execution boundary:
 
 Sirvir does not select, configure, benchmark, budget, or fall back to hosted model APIs. It also does not bundle a second copy of Turbofit; the Turbofit plugin remains the sole implementation and source of truth.
 
+## What Sirvir does
+
+1. **Fresh TurboFit awareness:** resolves the current default-branch commit from [SouthpawIN/turbofit](https://github.com/SouthpawIN/turbofit), records the commit SHA, and cites current source instead of trusting a bundled snapshot.
+2. **Machine comparison:** inventories the user's hardware and compares it with current catalogs, recipes, backend requirements, and evidence. Results are labeled measured, portable-fit / benchmark required, candidate, unsupported, or blocked.
+3. **Turbofit Q&A:** answer first, then cite the source path and commit for version-sensitive facts.
+4. **Install and configure:** guides the supported Hermes plugin/setup path and verifies a real local request.
+5. **Write TurboFit PRs:** turns reusable support findings into deduplicated, regression-tested pull requests and reports the real PR URL and CI state.
+
 ## Install
 
 Install Turbofit first:
@@ -23,9 +31,10 @@ Install Turbofit first:
 hermes plugins install --enable https://github.com/SouthpawIN/turbofit.git
 ```
 
-Then install the Sirvir profile using the current Hermes profile installation flow and start it:
+Then install the Sirvir profile from this repository and start it:
 
 ```bash
+hermes profile install SouthpawIN/sirvir
 hermes -p sirvir
 ```
 
