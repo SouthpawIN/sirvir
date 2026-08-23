@@ -1,4 +1,6 @@
-# Sirvir is local-only. Turbofit's loopback gateway is the only model route.
+# Sirvir is Turbofit support. Primary route is always the local gateway.
+# Bootstrap fallback exists only so Sirvir can finish install/setup when :8091
+# is not up yet. After /v1/models answers, all support work stays on Turbofit.
 _config_version: 33
 
 model:
@@ -17,7 +19,17 @@ providers:
       active:main: {}
       active:aux: {}
 
-fallback_providers: []
+fallback_providers:
+  - provider: nous
+    model: stealth/ox-alpha
+  - provider: nous
+    model: stepfun/step-3.7-flash:free
+  - provider: nous
+    model: tencent/hy3:free
+  - provider: nous
+    model: poolside/laguna-s-2.1:free
+  - provider: nous
+    model: poolside/laguna-xs-2.1:free
 
 auxiliary:
   approval: &local_aux

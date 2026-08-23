@@ -44,7 +44,5 @@ esac
 hermes profile show sirvir >/dev/null
 
 printf '%s\n' "Sirvir and Turbofit are installed."
-printf '%s\n' "Plugin install does not start the Turbofit model gateway on 127.0.0.1:8091."
-printf '%s\n' "Stay on the default Hermes profile. Run: hermes dashboard"
-printf '%s\n' "Open Turbofit, Apply, then verify: curl -fsS http://127.0.0.1:8091/v1/models"
-printf '%s\n' "Only after that answers, start Sirvir with: hermes -p sirvir"
+printf '%s\n' "Start Sirvir and ask it to install Turbofit, download recommended models, and verify a local completion."
+printf '%s\n' "Start with: hermes -p sirvir"

@@ -25,8 +25,8 @@ class SirvirInstallerTests(unittest.TestCase):
         )
         self.assertIn("profile show sirvir", commands)
         self.assertIn("Sirvir and Turbofit are installed", stdout)
-        self.assertIn("127.0.0.1:8091", stdout)
-        self.assertIn("default Hermes profile", stdout)
+        self.assertIn("hermes -p sirvir", stdout)
+        self.assertIn("recommended models", stdout)
 
     def test_fresh_profile_install_uses_full_git_url(self):
         commands, stdout = self._run_installer(sirvir_present=False, turbofit_present=True)

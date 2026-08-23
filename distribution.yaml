@@ -1,6 +1,6 @@
 name: sirvir
 description: Local-only Turbofit installation, configuration, usage, troubleshooting, and contribution support
-version: "2.2.1"
+version: "2.2.2"
 author: SouthpawIN
 license: MIT
 homepage: https://github.com/SouthpawIN/sirvir

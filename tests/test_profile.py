@@ -27,10 +27,10 @@ class SirvirProfileTests(unittest.TestCase):
     def test_distribution_is_single_product(self):
         manifest = yaml.safe_load((ROOT / "distribution.yaml").read_text())
         self.assertEqual(manifest["name"], "sirvir")
-        self.assertEqual(manifest["version"], "2.2.1")
+        self.assertEqual(manifest["version"], "2.2.2")
         skill_text = (ROOT / "skills" / "sirvir" / "SKILL.md").read_text()
         skill_meta = yaml.safe_load(skill_text.split("---", 2)[1])
-        self.assertEqual(skill_meta["version"], "2.2.1")
+        self.assertEqual(skill_meta["version"], "2.2.2")
         self.assertEqual([d["name"] for d in manifest["dependencies"]], ["turbofit"])
         self.assertEqual(manifest["dependencies"][0]["repo"], "SouthpawIN/turbofit")
         self.assertEqual(manifest["distribution_owned"], [
@@ -48,7 +48,10 @@ class SirvirProfileTests(unittest.TestCase):
         self.assertEqual(config["_config_version"], 33)
         self.assertEqual(config["model"]["provider"], "custom:turbofit")
         self.assertEqual(config["model"]["default"], "auto")
-        self.assertEqual(config["fallback_providers"], [])
+        self.assertEqual(
+            [item["provider"] for item in config["fallback_providers"]],
+            ["nous", "nous", "nous", "nous", "nous"],
+        )
 
         providers = config["providers"]
         self.assertEqual(list(providers), ["turbofit"])
@@ -88,7 +91,8 @@ class SirvirProfileTests(unittest.TestCase):
         ]
         text = "\n".join(path.read_text().lower() for path in files)
         found = sorted(marker for marker in CLOUD_MARKERS if marker in text)
-        self.assertEqual(found, [], f"cloud provider markers remain: {found}")
+        self.assertEqual(found, ["nous"], f"unexpected cloud provider markers remain: {found}")
+        self.assertIn("bootstrap", text)
 
     def test_old_parallel_skills_are_removed(self):
         skill_manifests = sorted((ROOT / "skills").glob("**/SKILL.md"))
@@ -168,9 +172,9 @@ class SirvirProfileTests(unittest.TestCase):
             (ROOT / "AGENTS.md").read_text().lower(),
             (ROOT / "skills" / "sirvir" / "SKILL.md").read_text().lower(),
         ])
-        self.assertIn("default profile first", text)
+        self.assertIn("install, recommended-model download, and setup", text)
         self.assertIn("http://127.0.0.1:8091/v1/models", text)
-        self.assertIn("cannot chat until", text)
+        self.assertIn("bootstrap fallback", text)
         self.assertIn("https://github.com/southpawin/sirvir.git", text)
         self.assertNotIn("southpawin/sirvir\" --name sirvir", text)
 

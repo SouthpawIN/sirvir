@@ -51,7 +51,7 @@ When direct inspection is impossible, request only the minimum redacted diagnost
 
 ## Installation support
 
-Install and verify Turbofit from the **default profile first**. Sirvir cannot chat until `http://127.0.0.1:8091/v1/models` works. Connection refused on 8091 is a missing Turbofit runtime, not a Hermes messaging-gateway problem and not a firewall problem when nothing is listening. Do not diagnose a dead 8091 from inside Sirvir.
+Sirvir handles Turbofit **install, recommended-model download, and setup**. That is the job. A refused `http://127.0.0.1:8091/v1/models` means the runtime is not up yet — download the recommended models, start the native stack, and verify a real completion. Use the bootstrap fallback only long enough to finish that setup. Do not send the user away to another profile to do Sirvir's work.
 
 Establish operating system, architecture, Hermes version and health, system RAM, available storage, accelerator vendor and backend, per-device memory, device count/topology, and whether the user wants Turbofit as Hermes' local primary provider. Do not infer hardware from a marketing name when physical inventory is available.
 
