@@ -1,4 +1,5 @@
 import pathlib
+import struct
 import unittest
 
 import yaml
@@ -26,10 +27,10 @@ class SirvirProfileTests(unittest.TestCase):
     def test_distribution_is_single_product(self):
         manifest = yaml.safe_load((ROOT / "distribution.yaml").read_text())
         self.assertEqual(manifest["name"], "sirvir")
-        self.assertEqual(manifest["version"], "2.1.0")
+        self.assertEqual(manifest["version"], "2.2.0")
         skill_text = (ROOT / "skills" / "sirvir" / "SKILL.md").read_text()
         skill_meta = yaml.safe_load(skill_text.split("---", 2)[1])
-        self.assertEqual(skill_meta["version"], "2.1.0")
+        self.assertEqual(skill_meta["version"], "2.2.0")
         self.assertEqual([d["name"] for d in manifest["dependencies"]], ["turbofit"])
         self.assertEqual(manifest["dependencies"][0]["repo"], "SouthpawIN/turbofit")
         self.assertEqual(manifest["distribution_owned"], [
@@ -38,6 +39,7 @@ class SirvirProfileTests(unittest.TestCase):
             "AGENTS.md",
             "config.yaml",
             "distribution.yaml",
+            "assets/",
             "skills/sirvir/",
         ])
 
@@ -60,6 +62,21 @@ class SirvirProfileTests(unittest.TestCase):
             with self.subTest(role=role):
                 self.assertEqual(route["provider"], "custom:turbofit")
                 self.assertEqual(route["model"], "active:aux")
+
+    def test_readme_artwork_is_committed_and_full_size(self):
+        readme = (ROOT / "README.md").read_text()
+        expected = {
+            "assets/sirvir-hero.png": (1920, 1080),
+            "assets/sirvir-support-loop.png": (1600, 900),
+        }
+        for relative, dimensions in expected.items():
+            with self.subTest(relative=relative):
+                path = ROOT / relative
+                self.assertIn(relative, readme)
+                self.assertTrue(path.is_file())
+                data = path.read_bytes()[:24]
+                self.assertEqual(data[:8], b"\x89PNG\r\n\x1a\n")
+                self.assertEqual(struct.unpack(">II", data[16:24]), dimensions)
 
     def test_no_cloud_provider_markers_in_active_profile(self):
         files = [

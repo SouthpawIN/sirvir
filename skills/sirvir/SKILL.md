@@ -1,7 +1,7 @@
 ---
 name: sirvir
 description: Use when installing, configuring, using, troubleshooting, or improving Turbofit. Local-only support with verified outcomes and upstream PRs.
-version: 2.1.0
+version: 2.2.0
 author: SouthpawIN
 license: MIT
 tags: [turbofit, customer-support, local-llm, troubleshooting, github, pull-requests]
@@ -60,13 +60,15 @@ Answer first. Cite the source path and commit for version-sensitive facts. Clear
 
 ## Canonical install path
 
-Confirm against current Turbofit docs, then use:
+The Sirvir bootstrap guarantees that Turbofit exists before the local-only Sirvir profile is started:
 
 ```bash
-hermes plugins install --enable https://github.com/SouthpawIN/turbofit.git
+git clone https://github.com/SouthpawIN/sirvir.git
+cd sirvir
+scripts/install
 ```
 
-Start a fresh Hermes session and run:
+`scripts/install` checks `hermes plugins list`; when Turbofit is absent it runs `hermes plugins install --enable https://github.com/SouthpawIN/turbofit.git`, verifies the plugin, then installs or updates the Sirvir profile. Start a fresh Hermes session and run:
 
 ```text
 /turbofit setup

@@ -1,6 +1,6 @@
 name: sirvir
 description: Local-only Turbofit installation, configuration, usage, troubleshooting, and contribution support
-version: "2.1.0"
+version: "2.2.0"
 author: SouthpawIN
 license: MIT
 homepage: https://github.com/SouthpawIN/sirvir
@@ -19,6 +19,7 @@ distribution_owned:
   - AGENTS.md
   - config.yaml
   - distribution.yaml
+  - assets/
   - skills/sirvir/
 
 post_install:

@@ -1,6 +1,6 @@
 # Sirvir
 
-![Sirvir profile](profile.png)
+![Sirvir — GitHub-current Turbofit support](assets/sirvir-hero.png)
 
 **Sirvir is Turbofit customer service.** It helps people install, configure, use, and troubleshoot Turbofit on their own hardware, then turns reusable support findings into tested pull requests for the Turbofit project.
 
@@ -23,20 +23,20 @@ Sirvir does not select, configure, benchmark, budget, or fall back to hosted mod
 4. **Install and configure:** guides the supported Hermes plugin/setup path and verifies a real local request.
 5. **Write TurboFit PRs:** turns reusable support findings into deduplicated, regression-tested pull requests and reports the real PR URL and CI state.
 
+![Sirvir support loop — fresh source, real machine, tested pull request](assets/sirvir-support-loop.png)
+
 ## Install
 
-Install Turbofit first:
+Clone Sirvir and run its bootstrap installer:
 
 ```bash
-hermes plugins install --enable https://github.com/SouthpawIN/turbofit.git
-```
-
-Then install the Sirvir profile from this repository and start it:
-
-```bash
-hermes profile install SouthpawIN/sirvir
+git clone https://github.com/SouthpawIN/sirvir.git
+cd sirvir
+scripts/install
 hermes -p sirvir
 ```
+
+`scripts/install` checks Hermes' plugin inventory first. If Turbofit is missing, Sirvir installs and enables the current [SouthpawIN/turbofit](https://github.com/SouthpawIN/turbofit) plugin before installing the Sirvir profile. If either component already exists, it is preserved or updated instead of duplicated.
 
 In Sirvir, ask for the outcome you want:
 
@@ -78,6 +78,7 @@ Sirvir never direct-pushes the default branch, merges its own PR, releases, or p
 - `AGENTS.md` — support and contribution operating procedure
 - `config.yaml` — loopback-only Turbofit model routing
 - `skills/sirvir/SKILL.md` — reusable support workflow
+- `scripts/install` — reciprocal bootstrap: Turbofit first when missing, then Sirvir
 - `tests/` — profile invariants and regression checks
 
 Turbofit's runtime, hardware policy, recipes, benchmark evidence, and commands belong in Turbofit—not here.

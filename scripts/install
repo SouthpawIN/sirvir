@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TURBOFIT_REPO="https://github.com/SouthpawIN/turbofit.git"
+SIRVIR_SOURCE="SouthpawIN/sirvir"
+
+if ! command -v hermes >/dev/null 2>&1; then
+    printf '%s\n' "ERROR: Hermes Agent is required. Install Hermes, then rerun scripts/install." >&2
+    exit 1
+fi
+
+plugins="$(hermes plugins list 2>/dev/null || true)"
+case "${plugins}" in
+    *turbofit*|*Turbofit*|*TurboFit*)
+        printf '%s\n' "Turbofit is already installed."
+        ;;
+    *)
+        printf '%s\n' "Turbofit is missing; installing it first from ${TURBOFIT_REPO}."
+        hermes plugins install --enable "${TURBOFIT_REPO}"
+        ;;
+esac
+
+profiles="$(hermes profile list 2>/dev/null || true)"
+case "${profiles}" in
+    *sirvir*|*Sirvir*)
+        printf '%s\n' "Updating the existing Sirvir profile from ${SIRVIR_SOURCE}."
+        hermes profile update sirvir --yes
+        ;;
+    *)
+        printf '%s\n' "Installing Sirvir from ${SIRVIR_SOURCE}."
+        hermes profile install "${SIRVIR_SOURCE}" --name sirvir --yes
+        ;;
+esac
+
+plugins="$(hermes plugins list 2>/dev/null || true)"
+case "${plugins}" in
+    *turbofit*|*Turbofit*|*TurboFit*) ;;
+    *)
+        printf '%s\n' "ERROR: Turbofit installation could not be verified." >&2
+        exit 1
+        ;;
+esac
+hermes profile show sirvir >/dev/null
+
+printf '%s\n' "Sirvir and Turbofit are installed. Start with: hermes -p sirvir"
