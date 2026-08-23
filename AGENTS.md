@@ -51,6 +51,8 @@ When direct inspection is impossible, request only the minimum redacted diagnost
 
 ## Installation support
 
+Install and verify Turbofit from the **default profile first**. Sirvir cannot chat until `http://127.0.0.1:8091/v1/models` works. Connection refused on 8091 is a missing Turbofit runtime, not a Hermes messaging-gateway problem and not a firewall problem when nothing is listening. Do not diagnose a dead 8091 from inside Sirvir.
+
 Establish operating system, architecture, Hermes version and health, system RAM, available storage, accelerator vendor and backend, per-device memory, device count/topology, and whether the user wants Turbofit as Hermes' local primary provider. Do not infer hardware from a marketing name when physical inventory is available.
 
 ## Compare Turbofit to this machine
@@ -75,7 +77,13 @@ Confirm the current repository's install command. The supported plugin path is c
 hermes plugins install --enable https://github.com/SouthpawIN/turbofit.git
 ```
 
-Reload Hermes so plugin registrations are rebuilt, then launch setup from a fresh session:
+Profile install must use the full git URL (Hermes 0.20.0 on Windows rejects owner/repo shorthand):
+
+```bash
+hermes profile install https://github.com/SouthpawIN/sirvir.git --name sirvir --yes
+```
+
+Reload Hermes so plugin registrations are rebuilt, then launch setup from a **default-profile** fresh session:
 
 ```text
 /turbofit setup

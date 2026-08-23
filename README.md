@@ -27,16 +27,28 @@ Sirvir does not select, configure, benchmark, budget, or fall back to hosted mod
 
 ## Install
 
+Install and verify Turbofit from the **default Hermes profile first**. Sirvir has no non-local provider and cannot chat until `http://127.0.0.1:8091/v1/models` answers. Plugin install is not a running Turbofit gateway.
+
 Clone Sirvir and run its bootstrap installer:
 
 ```bash
 git clone https://github.com/SouthpawIN/sirvir.git
 cd sirvir
 scripts/install
-hermes -p sirvir
 ```
 
-`scripts/install` checks Hermes' plugin inventory first. If Turbofit is missing, Sirvir installs and enables the current [SouthpawIN/turbofit](https://github.com/SouthpawIN/turbofit) plugin before installing the Sirvir profile. If either component already exists, it is preserved or updated instead of duplicated.
+Direct profile install (Hermes 0.20.0 on Windows rejects `SouthpawIN/sirvir` shorthand):
+
+```bash
+hermes plugins install --enable https://github.com/SouthpawIN/turbofit.git
+hermes profile install https://github.com/SouthpawIN/sirvir.git --name sirvir --yes
+```
+
+`scripts/install` checks Hermes' plugin inventory first. If Turbofit is missing, it installs and enables the current [SouthpawIN/turbofit](https://github.com/SouthpawIN/turbofit) plugin, then installs or updates the Sirvir profile from the full git URL. Stay on the default profile, finish Turbofit setup (`hermes dashboard` → **Turbofit** → Apply), verify `/v1/models`, then start Sirvir:
+
+```bash
+hermes -p sirvir
+```
 
 In Sirvir, ask for the outcome you want:
 

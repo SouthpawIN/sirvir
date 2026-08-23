@@ -27,10 +27,10 @@ class SirvirProfileTests(unittest.TestCase):
     def test_distribution_is_single_product(self):
         manifest = yaml.safe_load((ROOT / "distribution.yaml").read_text())
         self.assertEqual(manifest["name"], "sirvir")
-        self.assertEqual(manifest["version"], "2.2.0")
+        self.assertEqual(manifest["version"], "2.2.1")
         skill_text = (ROOT / "skills" / "sirvir" / "SKILL.md").read_text()
         skill_meta = yaml.safe_load(skill_text.split("---", 2)[1])
-        self.assertEqual(skill_meta["version"], "2.2.0")
+        self.assertEqual(skill_meta["version"], "2.2.1")
         self.assertEqual([d["name"] for d in manifest["dependencies"]], ["turbofit"])
         self.assertEqual(manifest["dependencies"][0]["repo"], "SouthpawIN/turbofit")
         self.assertEqual(manifest["distribution_owned"], [
@@ -160,6 +160,19 @@ class SirvirProfileTests(unittest.TestCase):
         self.assertIn("gh pr create", text)
         self.assertIn("read back", text)
         self.assertIn("ci", text)
+
+    def test_bootstrap_order_is_explicit(self):
+        text = "\n".join([
+            (ROOT / "README.md").read_text().lower(),
+            (ROOT / "SOUL.md").read_text().lower(),
+            (ROOT / "AGENTS.md").read_text().lower(),
+            (ROOT / "skills" / "sirvir" / "SKILL.md").read_text().lower(),
+        ])
+        self.assertIn("default profile first", text)
+        self.assertIn("http://127.0.0.1:8091/v1/models", text)
+        self.assertIn("cannot chat until", text)
+        self.assertIn("https://github.com/southpawin/sirvir.git", text)
+        self.assertNotIn("southpawin/sirvir\" --name sirvir", text)
 
 
 if __name__ == "__main__":

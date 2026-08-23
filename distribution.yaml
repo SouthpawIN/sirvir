@@ -1,6 +1,6 @@
 name: sirvir
 description: Local-only Turbofit installation, configuration, usage, troubleshooting, and contribution support
-version: "2.2.0"
+version: "2.2.1"
 author: SouthpawIN
 license: MIT
 homepage: https://github.com/SouthpawIN/sirvir
@@ -23,5 +23,5 @@ distribution_owned:
   - skills/sirvir/
 
 post_install:
-  - command: 'echo "Sirvir installed. Start with: hermes -p sirvir"'
-    description: Display local support-profile usage
+  - command: 'echo "Sirvir installed. Verify http://127.0.0.1:8091/v1/models from the default profile first, then: hermes -p sirvir"'
+    description: Display local support-profile usage after Turbofit gateway health

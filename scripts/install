@@ -2,7 +2,8 @@
 set -euo pipefail
 
 TURBOFIT_REPO="https://github.com/SouthpawIN/turbofit.git"
-SIRVIR_SOURCE="SouthpawIN/sirvir"
+# Hermes 0.20.0 on Windows rejects owner/repo shorthand. Always use a full git URL.
+SIRVIR_SOURCE="https://github.com/SouthpawIN/sirvir.git"
 
 if ! command -v hermes >/dev/null 2>&1; then
     printf '%s\n' "ERROR: Hermes Agent is required. Install Hermes, then rerun scripts/install." >&2
@@ -42,4 +43,8 @@ case "${plugins}" in
 esac
 hermes profile show sirvir >/dev/null
 
-printf '%s\n' "Sirvir and Turbofit are installed. Start with: hermes -p sirvir"
+printf '%s\n' "Sirvir and Turbofit are installed."
+printf '%s\n' "Plugin install does not start the Turbofit model gateway on 127.0.0.1:8091."
+printf '%s\n' "Stay on the default Hermes profile. Run: hermes dashboard"
+printf '%s\n' "Open Turbofit, Apply, then verify: curl -fsS http://127.0.0.1:8091/v1/models"
+printf '%s\n' "Only after that answers, start Sirvir with: hermes -p sirvir"
