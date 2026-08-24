@@ -119,6 +119,25 @@ If no recipe has current evidence for this machine, call it blocked, unsupported
 
 Prefer `turbofit_configure` and setup surfaces over hand-editing YAML. Never put credentials into provider entries, runtime profiles, route state, logs, support bundles, commits, or PR evidence.
 
+### Local vs remote Hermes
+
+- If Sirvir and the model gateway are on the **same** machine, the provider stays `custom:turbofit` at `http://127.0.0.1:8091/v1` with model `auto`.
+- If Hermes is on a **different** machine, change **that** Hermes install. Do not rewrite the Windows Sirvir loopback URL to a LAN IP.
+- Remote URL: `/turbofit serve` (Tailscale) or `turbofit_configure` with `base_url=http://<windows-lan>:8091/v1`. Keep provider `custom:turbofit` and model `auto`.
+- Never run `hermes config set model.provider custom`.
+- Never set `model.default` to a GGUF filename.
+- Never tell the user `hermes config set model.base_url` as the primary fix.
+
+### Windows persistence
+
+A detached Vulkan/llama-server process will die. Install the user scheduled tasks:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\install-windows-native-service.ps1 -Backend vulkan -Binary <llama-server.exe> -GatewayHost 0.0.0.0
+```
+
+`-GatewayHost 0.0.0.0` is only for LAN/Tailscale clients. Local Sirvir still uses loopback.
+
 ## Troubleshooting workflow
 
 Inspect in order and stop when the first broken contract explains the symptom:

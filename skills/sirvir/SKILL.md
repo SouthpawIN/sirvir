@@ -1,7 +1,7 @@
 ---
 name: sirvir
 description: Use when installing, configuring, using, troubleshooting, or improving Turbofit. Local-only support with verified outcomes and upstream PRs.
-version: 2.2.2
+version: 2.2.3
 author: SouthpawIN
 license: MIT
 tags: [turbofit, customer-support, local-llm, troubleshooting, github, pull-requests]
@@ -61,6 +61,8 @@ Answer first. Cite the source path and commit for version-sensitive facts. Clear
 ## Canonical install path
 
 Sirvir handles Turbofit **install, recommended-model download, and setup**. A bootstrap fallback exists only so first-run setup can finish when `http://127.0.0.1:8091/v1/models` is not up yet.
+
+Same-machine Sirvir stays on loopback. Remote Hermes uses `/turbofit serve` or `turbofit_configure` with the Windows LAN/Tailscale URL. Never `hermes config set model.provider custom`. Never set `model.default` to a GGUF filename.
 
 ```bash
 git clone https://github.com/SouthpawIN/sirvir.git
